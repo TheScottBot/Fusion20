@@ -141,24 +141,31 @@ describe("lightingEngineSightPolicy", () => {
     });
   });
 
-  describe("light sensitivity, as the February 2024 page describes it and not yet observed", () => {
-    const light = buildLightSource({ position: { x: 420, y: 80 }, reach: 80 });
-    const scene = buildSightScene({ lights: [light] });
-
-    it("does not reach the target at 100 percent", () => {
-      expect(canSee(buildSightViewer(), buildSightTarget(), scene)).toBe(false);
+  describe("partial daylight, observed in Roll20 on 7 November 2026", () => {
+    it.each([
+      [1, true],
+      [0.9, true],
+      [0.5, false],
+      [0.05, false],
+    ])("at opacity %s gives %s", (daylightOpacity, expected) => {
+      const scene = buildSightScene({ daylightEnabled: true, daylightOpacity });
+      expect(canSee(buildSightViewer(), buildSightTarget(), scene)).toBe(expected);
     });
 
-    it("reaches twice as far at 200 percent", () => {
-      expect(canSee(buildSightViewer({ lightSensitivityPercent: 200 }), buildSightTarget(), scene)).toBe(true);
+    it("still lets a lamp light the target in weak daylight", () => {
+      const scene = buildSightScene({
+        daylightEnabled: true,
+        daylightOpacity: 0.5,
+        lights: [buildLightSource({ position: { x: 420, y: 150 }, reach: 100 })],
+      });
+      expect(canSee(buildSightViewer(), buildSightTarget(), scene)).toBe(true);
     });
+  });
 
-    it("reaches half as far at 50 percent", () => {
-      const reachableLight = buildLightSource({ position: { x: 420, y: 130 }, reach: 80 });
-      const reachableScene = buildSightScene({ lights: [reachableLight] });
-      expect(canSee(buildSightViewer(), buildSightTarget(), reachableScene)).toBe(true);
-      expect(canSee(buildSightViewer({ lightSensitivityPercent: 50 }), buildSightTarget(), reachableScene)).toBe(false);
-    });
+  it("sees the target in the observed sensitivity rooms, lit by a lamp two squares away", () => {
+    const scene = buildSightScene({ lights: [buildLightSource({ position: { x: 770, y: 1260 }, reach: 175 })] });
+    const viewer = buildSightViewer({ position: { x: 630, y: 1260 } });
+    expect(canSee(viewer, buildSightTarget({ centre: { x: 910, y: 1260 } }), scene)).toBe(true);
   });
 
   describe("the rooms observed from a player's view in Roll20 on 7 November 2026", () => {
