@@ -1,0 +1,8 @@
+packages:
+  - shared
+  - products/*
+
+# esbuild's install script only verifies its binary, which the optional platform
+# package already supplies, so no dependency is allowed to run code at install time.
+allowBuilds:
+  esbuild: false
