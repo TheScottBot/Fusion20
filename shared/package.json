@@ -1,0 +1,13 @@
+{
+  "name": "@fusion20/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./domain": "./domain/index.ts",
+    "./protocol": "./protocol/index.ts",
+    "./roll20": "./roll20/index.ts",
+    "./application": "./application/index.ts",
+    "./testing": "./testing/index.ts"
+  }
+}
