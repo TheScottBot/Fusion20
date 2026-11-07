@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { anyAttackReaches, type AttackRangeProfile } from "./attack_reach.ts";
+import { anyAttackReaches, attackReachesTarget, type AttackRangeProfile } from "./attack_reach.ts";
 
 const noAttacks: AttackRangeProfile = { meleeReach: undefined, rangedLongRange: undefined, cantripRange: undefined };
 
@@ -23,5 +23,24 @@ describe("anyAttackReaches", () => {
 
   it("reaches nothing with no attacks", () => {
     expect(anyAttackReaches(noAttacks, 0)).toBe(false);
+  });
+});
+
+describe("attackReachesTarget", () => {
+  it("lets a melee attack reach anything adjacent, whatever the distance measures", () => {
+    expect(attackReachesTarget({ ...noAttacks, meleeReach: 5 }, 10, true)).toBe(true);
+  });
+
+  it("gives that to melee only, so a bow does not gain it", () => {
+    expect(attackReachesTarget({ ...noAttacks, rangedLongRange: 5 }, 10, true)).toBe(false);
+    expect(attackReachesTarget({ ...noAttacks, cantripRange: 5 }, 10, true)).toBe(false);
+  });
+
+  it("does not help a melee attack against something not adjacent", () => {
+    expect(attackReachesTarget({ ...noAttacks, meleeReach: 5 }, 10, false)).toBe(false);
+  });
+
+  it("still measures normally for everything else", () => {
+    expect(attackReachesTarget({ ...noAttacks, rangedLongRange: 150 }, 100, false)).toBe(true);
   });
 });

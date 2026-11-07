@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
+  areFootprintsAdjacent,
   createSquareGrid,
   createTokenFootprint,
   measureFootprintDistance,
@@ -218,5 +219,24 @@ describe("measureFootprintDistance", () => {
         }),
       );
     });
+  });
+});
+
+describe("areFootprintsAdjacent", () => {
+  it.each([
+    ["beside", 1, 0, true],
+    ["above", 0, 1, true],
+    ["on a diagonal", 1, 1, true],
+    ["overlapping", 0, 0, true],
+    ["one square clear", 2, 0, false],
+    ["one square clear on a diagonal", 2, 2, false],
+    ["a knight's move away", 2, 1, false],
+  ])("is right for a token %s", (_description, across, down, expected) => {
+    expect(areFootprintsAdjacent(footprintAt(0, 0), footprintAt(across, down))).toBe(expected);
+  });
+
+  it("measures from the edge of a large token, on any side", () => {
+    expect(areFootprintsAdjacent(footprintAt(0, 0, 2, 2), footprintAt(2, 1))).toBe(true);
+    expect(areFootprintsAdjacent(footprintAt(3, 0), footprintAt(0, 0, 2, 2))).toBe(false);
   });
 });
