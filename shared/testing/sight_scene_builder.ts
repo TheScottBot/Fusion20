@@ -7,7 +7,6 @@ export function buildSightViewer(fixture: Partial<SightViewer> = {}): SightViewe
     nightVisionReach: 0,
     fieldOfVision: undefined,
     nightFieldOfVision: undefined,
-    lightSensitivityPercent: 100,
     ...fixture,
   };
 }
@@ -21,5 +20,5 @@ export function buildLightSource(fixture: Partial<LightSource> = {}): LightSourc
 }
 
 export function buildSightScene(fixture: Partial<SightScene> = {}): SightScene {
-  return { lightingEnabled: true, daylightEnabled: false, barriers: [], lights: [], ...fixture };
+  return { lightingEnabled: true, daylightEnabled: false, daylightOpacity: 1, barriers: [], lights: [], ...fixture };
 }

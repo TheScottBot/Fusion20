@@ -13,7 +13,6 @@ export interface SightViewer {
   readonly nightVisionReach: number;
   readonly fieldOfVision: AngularField | undefined;
   readonly nightFieldOfVision: AngularField | undefined;
-  readonly lightSensitivityPercent: number;
 }
 
 export interface SightTarget {
@@ -32,6 +31,7 @@ export interface LightSource {
 export interface SightScene {
   readonly lightingEnabled: boolean;
   readonly daylightEnabled: boolean;
+  readonly daylightOpacity: number;
   readonly barriers: readonly SightBarrier[];
   readonly lights: readonly LightSource[];
 }
@@ -44,7 +44,9 @@ export interface SightPolicy {
 // the sliver of a target in Roll20's Corner small room still counted.
 const cornerInsetRatio = 0.05;
 const fullCircleDegrees = 360;
-const fullLightSensitivityPercent = 100;
+// Observed, not documented: at 50 percent and below a player's view was black, and well above
+// it the page was lit. Where between them it changes was not measured (FF61).
+const weakestUnusableDaylightOpacity = 0.5;
 
 export function targetSamplePoints(target: SightTarget): readonly PagePoint[] {
   const { centre, width, height } = target;
@@ -84,10 +86,11 @@ function isLitByNightVision(viewer: SightViewer, point: PagePoint): boolean {
   );
 }
 
-function isLitBySource(light: LightSource, viewer: SightViewer, point: PagePoint, scene: SightScene): boolean {
-  const reachForViewer = (light.reach * viewer.lightSensitivityPercent) / fullLightSensitivityPercent;
+// The token's light_sensitivity_multiplier is deliberately not applied. The February 2024 lighting
+// page says it changes how far a token sees by a light, but it made no difference when observed.
+function isLitBySource(light: LightSource, point: PagePoint, scene: SightScene): boolean {
   return (
-    distanceBetween(light.position, point) <= reachForViewer &&
+    distanceBetween(light.position, point) <= light.reach &&
     isWithinField(light.position, point, light.beam) &&
     hasLineOfSight(light.position, point, scene.barriers)
   );
@@ -95,9 +98,9 @@ function isLitBySource(light: LightSource, viewer: SightViewer, point: PagePoint
 
 function isIlluminated(viewer: SightViewer, point: PagePoint, scene: SightScene): boolean {
   return (
-    scene.daylightEnabled ||
+    (scene.daylightEnabled && scene.daylightOpacity > weakestUnusableDaylightOpacity) ||
     isLitByNightVision(viewer, point) ||
-    scene.lights.some((light) => isLitBySource(light, viewer, point, scene))
+    scene.lights.some((light) => isLitBySource(light, point, scene))
   );
 }
 
