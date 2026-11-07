@@ -15,3 +15,7 @@ export function anyAttackReaches(profile: AttackRangeProfile, distance: number):
 export function attackReachesTarget(profile: AttackRangeProfile, distance: number, isAdjacent: boolean): boolean {
   return anyAttackReaches(profile, distance) || (isAdjacent && profile.meleeReach !== undefined);
 }
+
+export function meleeReachesBySquares(profile: AttackRangeProfile, squaresDistance: number): boolean {
+  return profile.meleeReach !== undefined && squaresDistance <= profile.meleeReach;
+}

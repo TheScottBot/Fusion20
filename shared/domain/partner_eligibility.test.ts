@@ -150,6 +150,57 @@ describe("assessFusionPartners on an adjacent diagonal, under FF56", () => {
   });
 });
 
+describe("assessFusionPartners with long reach on a diagonal, by the author's ruling", () => {
+  const rulesWithoutFoure = ["pythagorean", "manhattan", "threefive"];
+
+  function gridFor(diagonalRule: string): SquareGrid {
+    const creation = createSquareGrid({ gridType: "square", diagonalRule, scaleNumber: 5, snappingIncrement: 1 });
+    if (creation.outcome === "refused") {
+      throw new Error("Expected the grid to be created");
+    }
+    return creation.grid;
+  }
+
+  function candidateAtDiagonal(squares: number, profile: { meleeReach?: number; rangedLongRange?: number }) {
+    return buildFusionCandidate({
+      footprint: { firstColumn: squares, lastColumn: squares, firstRow: squares, lastRow: squares },
+      rangeProfile: {
+        status: "present",
+        profile: {
+          meleeReach: profile.meleeReach,
+          rangedLongRange: profile.rangedLongRange,
+          cantripRange: undefined,
+        },
+      },
+    });
+  }
+
+  it.each(rulesWithoutFoure)("lets a 10 ft reach cover two diagonal squares under %s", (diagonalRule) => {
+    const assessment = assessOne(candidateAtDiagonal(2, { meleeReach: 10 }), { grid: gridFor(diagonalRule) });
+    expect(assessment.isEligible).toBe(true);
+  });
+
+  it.each(rulesWithoutFoure)("lets a 15 ft reach cover three diagonal squares under %s", (diagonalRule) => {
+    const assessment = assessOne(candidateAtDiagonal(3, { meleeReach: 15 }), { grid: gridFor(diagonalRule) });
+    expect(assessment.isEligible).toBe(true);
+  });
+
+  it("does not stretch a 10 ft reach to three squares", () => {
+    const assessment = assessOne(candidateAtDiagonal(3, { meleeReach: 10 }), { grid: gridFor("pythagorean") });
+    expect(assessment.reasons).toEqual(["out of range"]);
+  });
+
+  it("still measures a ranged attack by the page's own rule", () => {
+    const assessment = assessOne(candidateAtDiagonal(2, { rangedLongRange: 10 }), { grid: gridFor("pythagorean") });
+    expect(assessment.reasons).toEqual(["out of range"]);
+  });
+
+  it("keeps reporting the page's own distance, which is what a player sees measured", () => {
+    const assessment = assessOne(candidateAtDiagonal(2, { meleeReach: 10 }), { grid: gridFor("manhattan") });
+    expect(assessment.distance).toBe(20);
+  });
+});
+
 describe("hasEligiblePartner", () => {
   it("is true when anyone qualifies", () => {
     const assessments = assessFusionPartners({ ...baseAssessment, candidates: [buildFusionCandidate()] });

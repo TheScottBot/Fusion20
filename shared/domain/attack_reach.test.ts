@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { anyAttackReaches, attackReachesTarget, type AttackRangeProfile } from "./attack_reach.ts";
+import {
+  anyAttackReaches,
+  attackReachesTarget,
+  meleeReachesBySquares,
+  type AttackRangeProfile,
+} from "./attack_reach.ts";
 
 const noAttacks: AttackRangeProfile = { meleeReach: undefined, rangedLongRange: undefined, cantripRange: undefined };
 
@@ -42,5 +47,16 @@ describe("attackReachesTarget", () => {
 
   it("still measures normally for everything else", () => {
     expect(attackReachesTarget({ ...noAttacks, rangedLongRange: 150 }, 100, false)).toBe(true);
+  });
+});
+
+describe("meleeReachesBySquares", () => {
+  it("reaches up to and including the melee reach", () => {
+    expect(meleeReachesBySquares({ ...noAttacks, meleeReach: 15 }, 15)).toBe(true);
+    expect(meleeReachesBySquares({ ...noAttacks, meleeReach: 15 }, 20)).toBe(false);
+  });
+
+  it("does not apply to anyone without a melee attack", () => {
+    expect(meleeReachesBySquares({ ...noAttacks, rangedLongRange: 600 }, 5)).toBe(false);
   });
 });

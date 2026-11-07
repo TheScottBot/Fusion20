@@ -104,21 +104,27 @@ function cellsBetween(firstStart: number, firstEnd: number, secondStart: number,
   return Math.max(0, secondStart - firstEnd, firstStart - secondEnd);
 }
 
+function cellsApart(firstFootprint: TokenFootprint, secondFootprint: TokenFootprint) {
+  return {
+    across: cellsBetween(
+      firstFootprint.firstColumn,
+      firstFootprint.lastColumn,
+      secondFootprint.firstColumn,
+      secondFootprint.lastColumn,
+    ),
+    down: cellsBetween(
+      firstFootprint.firstRow,
+      firstFootprint.lastRow,
+      secondFootprint.firstRow,
+      secondFootprint.lastRow,
+    ),
+  };
+}
+
 // Counted in cells so the answer is the same under every diagonal rule. A distance cannot give
 // this, as an adjacent diagonal measures 7.07 ft under pythagorean and 10 ft under manhattan.
 export function areFootprintsAdjacent(firstFootprint: TokenFootprint, secondFootprint: TokenFootprint): boolean {
-  const across = cellsBetween(
-    firstFootprint.firstColumn,
-    firstFootprint.lastColumn,
-    secondFootprint.firstColumn,
-    secondFootprint.lastColumn,
-  );
-  const down = cellsBetween(
-    firstFootprint.firstRow,
-    firstFootprint.lastRow,
-    secondFootprint.firstRow,
-    secondFootprint.lastRow,
-  );
+  const { across, down } = cellsApart(firstFootprint, secondFootprint);
   return across <= 1 && down <= 1;
 }
 
@@ -128,18 +134,18 @@ export function measureFootprintDistance(
   secondFootprint: TokenFootprint,
   grid: SquareGrid,
 ): number {
-  const across = cellsBetween(
-    firstFootprint.firstColumn,
-    firstFootprint.lastColumn,
-    secondFootprint.firstColumn,
-    secondFootprint.lastColumn,
-  );
-  const down = cellsBetween(
-    firstFootprint.firstRow,
-    firstFootprint.lastRow,
-    secondFootprint.firstRow,
-    secondFootprint.lastRow,
-  );
+  const { across, down } = cellsApart(firstFootprint, secondFootprint);
   const cellsTravelled = cellsTravelledByDiagonalRule[grid.diagonalRule](across, down);
   return cellsTravelled * grid.snappingIncrement * grid.scaleNumber;
+}
+
+// Melee reach is counted in squares on every page, by the author's ruling: a 10 ft reach covers
+// two squares in any direction, even where the page's own rule measures the diagonal as longer.
+export function measureSquaresDistance(
+  firstFootprint: TokenFootprint,
+  secondFootprint: TokenFootprint,
+  grid: SquareGrid,
+): number {
+  const { across, down } = cellsApart(firstFootprint, secondFootprint);
+  return Math.max(across, down) * grid.snappingIncrement * grid.scaleNumber;
 }
