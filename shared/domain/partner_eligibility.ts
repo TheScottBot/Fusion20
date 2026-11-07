@@ -1,8 +1,9 @@
 import type { CombatantReference } from "./attack_roll.ts";
-import { attackReachesTarget, type AttackRangeProfile } from "./attack_reach.ts";
+import { attackReachesTarget, meleeReachesBySquares, type AttackRangeProfile } from "./attack_reach.ts";
 import {
   areFootprintsAdjacent,
   measureFootprintDistance,
+  measureSquaresDistance,
   type SquareGrid,
   type TokenFootprint,
 } from "./grid_geometry.ts";
@@ -55,6 +56,7 @@ function findRangeReason(
   rangeProfile: RangeProfileReading,
   distance: number,
   isAdjacent: boolean,
+  squaresDistance: number,
 ): IneligibilityReason | undefined {
   if (rangeProfile.status === "missing") {
     return "no range profile";
@@ -62,14 +64,18 @@ function findRangeReason(
   if (rangeProfile.status === "malformed") {
     return "malformed range profile";
   }
-  return attackReachesTarget(rangeProfile.profile, distance, isAdjacent) ? undefined : "out of range";
+  const { profile } = rangeProfile;
+  const isInRange =
+    attackReachesTarget(profile, distance, isAdjacent) || meleeReachesBySquares(profile, squaresDistance);
+  return isInRange ? undefined : "out of range";
 }
 
 function assessCandidate(candidate: FusionCandidate, question: FusionPartnerQuestion): PartnerAssessment {
   const { participants, target, grid, scene } = question;
   const distance = measureFootprintDistance(candidate.footprint, target.footprint, grid);
   const isAdjacent = areFootprintsAdjacent(candidate.footprint, target.footprint);
-  const rangeReason = findRangeReason(candidate.rangeProfile, distance, isAdjacent);
+  const squaresDistance = measureSquaresDistance(candidate.footprint, target.footprint, grid);
+  const rangeReason = findRangeReason(candidate.rangeProfile, distance, isAdjacent, squaresDistance);
   const canSeeTarget = selectSightPolicy(scene).canSee(candidate.viewer, target.sightTarget, scene);
   // Every reason is gathered, rather than stopping at the first, so one prompt shows the whole fix.
   const reasons: IneligibilityReason[] = [

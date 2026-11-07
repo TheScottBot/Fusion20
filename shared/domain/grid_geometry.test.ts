@@ -2,6 +2,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   areFootprintsAdjacent,
+  measureSquaresDistance,
   createSquareGrid,
   createTokenFootprint,
   measureFootprintDistance,
@@ -238,5 +239,23 @@ describe("areFootprintsAdjacent", () => {
   it("measures from the edge of a large token, on any side", () => {
     expect(areFootprintsAdjacent(footprintAt(0, 0, 2, 2), footprintAt(2, 1))).toBe(true);
     expect(areFootprintsAdjacent(footprintAt(3, 0), footprintAt(0, 0, 2, 2))).toBe(false);
+  });
+});
+
+describe("measureSquaresDistance", () => {
+  it.each(diagonalRules)("counts a diagonal as one square under %s", (diagonalRule) => {
+    expect(measureSquaresDistance(footprintAt(0, 0), footprintAt(2, 2), gridWith(diagonalRule))).toBe(10);
+  });
+
+  it("uses the longer side of a move", () => {
+    expect(measureSquaresDistance(footprintAt(0, 0), footprintAt(3, 1), gridWith("manhattan"))).toBe(15);
+  });
+
+  it("measures from the nearest cells of a large token", () => {
+    expect(measureSquaresDistance(footprintAt(0, 0, 2, 2), footprintAt(3, 3), gridWith("pythagorean"))).toBe(10);
+  });
+
+  it("is zero for overlapping tokens", () => {
+    expect(measureSquaresDistance(footprintAt(0, 0), footprintAt(0, 0), gridWith("manhattan"))).toBe(0);
   });
 });
