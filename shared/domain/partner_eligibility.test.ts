@@ -137,6 +137,19 @@ describe("assessFusionPartners", () => {
   });
 });
 
+describe("assessFusionPartners on an adjacent diagonal, under FF56", () => {
+  const diagonalFootprint = { firstColumn: 1, lastColumn: 1, firstRow: 1, lastRow: 1 };
+
+  it.each(["pythagorean", "manhattan", "threefive", "foure"])("reaches in melee under %s", (diagonalRule) => {
+    const creation = createSquareGrid({ gridType: "square", diagonalRule, scaleNumber: 5, snappingIncrement: 1 });
+    if (creation.outcome === "refused") {
+      throw new Error("Expected the grid to be created");
+    }
+    const candidate = buildFusionCandidate({ footprint: diagonalFootprint });
+    expect(assessOne(candidate, { grid: creation.grid }).isEligible).toBe(true);
+  });
+});
+
 describe("hasEligiblePartner", () => {
   it("is true when anyone qualifies", () => {
     const assessments = assessFusionPartners({ ...baseAssessment, candidates: [buildFusionCandidate()] });

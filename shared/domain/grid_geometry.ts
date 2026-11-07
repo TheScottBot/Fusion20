@@ -104,6 +104,24 @@ function cellsBetween(firstStart: number, firstEnd: number, secondStart: number,
   return Math.max(0, secondStart - firstEnd, firstStart - secondEnd);
 }
 
+// Counted in cells so the answer is the same under every diagonal rule. A distance cannot give
+// this, as an adjacent diagonal measures 7.07 ft under pythagorean and 10 ft under manhattan.
+export function areFootprintsAdjacent(firstFootprint: TokenFootprint, secondFootprint: TokenFootprint): boolean {
+  const across = cellsBetween(
+    firstFootprint.firstColumn,
+    firstFootprint.lastColumn,
+    secondFootprint.firstColumn,
+    secondFootprint.lastColumn,
+  );
+  const down = cellsBetween(
+    firstFootprint.firstRow,
+    firstFootprint.lastRow,
+    secondFootprint.firstRow,
+    secondFootprint.lastRow,
+  );
+  return across <= 1 && down <= 1;
+}
+
 // Measured between the nearest occupied cells, which is why a large target is reached sooner.
 export function measureFootprintDistance(
   firstFootprint: TokenFootprint,

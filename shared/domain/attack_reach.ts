@@ -9,3 +9,9 @@ export function anyAttackReaches(profile: AttackRangeProfile, distance: number):
   const ranges = [profile.meleeReach, profile.rangedLongRange, profile.cantripRange];
   return ranges.some((range) => range !== undefined && distance <= range);
 }
+
+// The author's ruling on FF56: adjacent counts for melee on every diagonal rule, as any player
+// would expect, even where the page's measurement says more than the weapon's reach.
+export function attackReachesTarget(profile: AttackRangeProfile, distance: number, isAdjacent: boolean): boolean {
+  return anyAttackReaches(profile, distance) || (isAdjacent && profile.meleeReach !== undefined);
+}
