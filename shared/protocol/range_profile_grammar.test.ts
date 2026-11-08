@@ -1,6 +1,11 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { encodeRangeProfile, maximumRangeProfileLength, parseRangeProfile } from "./range_profile_grammar.ts";
+import {
+  encodeRangeProfile,
+  maximumRangeProfileLength,
+  parseRangeProfile,
+  readRangeProfileValue,
+} from "./range_profile_grammar.ts";
 
 describe("parseRangeProfile", () => {
   it("reads one attack", () => {
@@ -112,5 +117,30 @@ describe("fuzz: parseRangeProfile", () => {
       ),
       { numRuns: fuzzRuns },
     );
+  });
+});
+
+describe("readRangeProfileValue", () => {
+  it.each([undefined, null, ""])("reads %j as a missing profile", (attributeValue) => {
+    expect(readRangeProfileValue(attributeValue)).toEqual({ status: "missing" });
+  });
+
+  it("forgives spaces a player typed on the sheet", () => {
+    expect(readRangeProfileValue(" melee=5, ranged=150 ")).toEqual({
+      status: "present",
+      profile: { meleeReach: 5, rangedLongRange: 150, cantripRange: undefined },
+    });
+  });
+
+  it.each([5, "melee=five", "x".repeat(maximumRangeProfileLength * 2 + 1), { melee: 5 }])(
+    "reads %j as malformed",
+    (attributeValue) => {
+      expect(readRangeProfileValue(attributeValue)).toEqual({ status: "malformed" });
+    },
+  );
+
+  it("still reads a value padded with spaces up to twice the grammar's length", () => {
+    const paddedValue = `melee=5${" ".repeat(maximumRangeProfileLength * 2 - 7)}`;
+    expect(readRangeProfileValue(paddedValue)).toMatchObject({ status: "present" });
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chainEndOrigins, chainEndReasonByOrigin } from "../domain/fusion_chain.ts";
-import { describeChainEvent, ineligibilityReasonText } from "./display_strings.ts";
+import { describeChainEvent, ineligibilityReasonText, ineligiblePartnerText, rangeSetText } from "./display_strings.ts";
 
 const nameOf = (reference: string): string =>
   ({ roller: "Niamh", ally: "FighterMan", goblin: "the Goblin" })[reference] ?? reference;
@@ -53,5 +53,17 @@ describe("describeChainEvent", () => {
 describe("ineligibilityReasonText", () => {
   it("explains a missing range profile with a pointer to the fix, under FD5", () => {
     expect(ineligibilityReasonText["no range profile"]).toContain("range");
+  });
+});
+
+describe("prompt wording", () => {
+  it("lists every reason a partner is not eligible beside their name", () => {
+    expect(ineligiblePartnerText("FighterMan", ["out of range", "cannot see target"])).toBe(
+      "FighterMan: Cannot reach the target; Cannot see the target",
+    );
+  });
+
+  it("names the character and the value when a range is set", () => {
+    expect(rangeSetText("Niamh", "melee=5")).toBe("The fusion20 range for Niamh is now melee=5.");
   });
 });

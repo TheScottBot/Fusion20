@@ -1,22 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createPropertyReader } from "../testing/index.ts";
+import { createPropertyReader, roll20PageProperties, roll20TokenProperties } from "../testing/index.ts";
 import { interpretBattlefield, type BattlefieldObjects } from "./battlefield_interpretation.ts";
-
-const defaultPage = {
-  grid_type: "square",
-  diagonaltype: "foure",
-  scale_number: 5,
-  scale_units: "ft",
-  snapping_increment: 1,
-  dynamic_lighting_enabled: true,
-  daylight_mode_enabled: true,
-  daylightModeOpacity: 0.9,
-};
 
 const noObjects: BattlefieldObjects = { paths: [], doors: [], windows: [], graphics: [] };
 
 function page(overrides: Record<string, unknown> = {}) {
-  return createPropertyReader("page-fixture", { ...defaultPage, ...overrides });
+  return createPropertyReader("page-fixture", { ...roll20PageProperties, ...overrides });
 }
 
 function interpreted(objects: Partial<BattlefieldObjects>, pageOverrides: Record<string, unknown> = {}) {
@@ -42,35 +31,7 @@ function roomWall(id: string, layer = "walls", extra: Record<string, unknown> = 
 }
 
 function token(id: string, extra: Record<string, unknown> = {}) {
-  return createPropertyReader(id, {
-    _subtype: "token",
-    name: "Fixture Token",
-    represents: "",
-    controlledby: "",
-    statusmarkers: "",
-    layer: "objects",
-    left: 945,
-    top: 455,
-    width: 70,
-    height: 70,
-    has_bright_light_vision: false,
-    has_night_vision: false,
-    night_vision_distance: 0,
-    emits_bright_light: false,
-    bright_light_distance: 0,
-    emits_low_light: false,
-    low_light_distance: 0,
-    has_limit_field_of_vision: false,
-    limit_field_of_vision_center: 0,
-    limit_field_of_vision_total: 0,
-    has_limit_field_of_night_vision: false,
-    limit_field_of_night_vision_center: 0,
-    limit_field_of_night_vision_total: 0,
-    has_directional_bright_light: false,
-    directional_bright_light_center: 0,
-    directional_bright_light_total: 0,
-    ...extra,
-  });
+  return createPropertyReader(id, { ...roll20TokenProperties, ...extra });
 }
 
 describe("interpretBattlefield, the page", () => {

@@ -126,3 +126,45 @@ export function buildBeyond20Message(fixture: Beyond20MessageFixture = {}) {
     playerid: fixture.playerId ?? "player-alpha",
   };
 }
+
+// A square 5 ft page with lighting and bright daylight on, as the Mod and the page bridge read it.
+export const roll20PageProperties: Readonly<Record<string, unknown>> = {
+  grid_type: "square",
+  diagonaltype: "foure",
+  scale_number: 5,
+  scale_units: "ft",
+  snapping_increment: 1,
+  dynamic_lighting_enabled: true,
+  daylight_mode_enabled: true,
+  daylightModeOpacity: 0.9,
+};
+
+// A one square token on the token layer, with no vision or light, at column 13, row 6.
+export const roll20TokenProperties: Readonly<Record<string, unknown>> = {
+  _subtype: "token",
+  name: "Fixture Token",
+  represents: "",
+  controlledby: "",
+  statusmarkers: "",
+  layer: "objects",
+  left: 945,
+  top: 455,
+  width: 70,
+  height: 70,
+  has_bright_light_vision: false,
+  has_night_vision: false,
+  night_vision_distance: 0,
+  emits_bright_light: false,
+  bright_light_distance: 0,
+  emits_low_light: false,
+  low_light_distance: 0,
+  has_limit_field_of_vision: false,
+  limit_field_of_vision_center: 0,
+  limit_field_of_vision_total: 0,
+  has_limit_field_of_night_vision: false,
+  limit_field_of_night_vision_center: 0,
+  limit_field_of_night_vision_total: 0,
+  has_directional_bright_light: false,
+  directional_bright_light_center: 0,
+  directional_bright_light_total: 0,
+};

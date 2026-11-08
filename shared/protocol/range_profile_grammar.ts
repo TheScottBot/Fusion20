@@ -1,4 +1,5 @@
 import type { AttackRangeProfile } from "../domain/attack_reach.ts";
+import type { RangeProfileReading } from "../domain/partner_eligibility.ts";
 
 export type RangeProfileRefusal =
   | "value too long"
@@ -76,4 +77,20 @@ export function encodeRangeProfile(profile: AttackRangeProfile): string {
       return range === undefined ? [] : [`${attackKind.token}${valueSeparator}${String(range)}`];
     })
     .join(entrySeparator);
+}
+
+// FD4 keeps the profile in one character attribute that both products read. FF60 left its name
+// to the implementation, and the prefix keeps it clear of every sheet's own attributes.
+export const rangeProfileAttributeName = "fusion20_range";
+
+// Players type this on a sheet, so spaces are forgiven before the strict grammar applies.
+export function readRangeProfileValue(attributeValue: unknown): RangeProfileReading {
+  if (attributeValue === undefined || attributeValue === null || attributeValue === "") {
+    return { status: "missing" };
+  }
+  if (typeof attributeValue !== "string" || attributeValue.length > maximumRangeProfileLength * 2) {
+    return { status: "malformed" };
+  }
+  const parsing = parseRangeProfile(attributeValue.replace(/\s/gu, ""));
+  return parsing.outcome === "parsed" ? { status: "present", profile: parsing.profile } : { status: "malformed" };
 }
