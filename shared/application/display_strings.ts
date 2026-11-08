@@ -51,3 +51,24 @@ export function targetPromptText(nominatorName: string): string {
 export function partnerPromptText(nominatorName: string, targetName: string): string {
   return `${nominatorName}, pick a partner to attack ${targetName}.`;
 }
+
+// The name chat shows as the speaker of every announcement and prompt.
+export const speakerName = "Fusion20";
+
+export const promptButtonLabel = { pickTarget: "Pick a target", endChain: "End the chain" } as const;
+
+export const unnamedTokenText = "An unnamed token";
+
+// Reasons are always words beside the name, never colour alone (section 9).
+export function ineligiblePartnerText(partnerName: string, reasons: readonly IneligibilityReason[]): string {
+  return `${partnerName}: ${reasons.map((reason) => ineligibilityReasonText[reason]).join("; ")}`;
+}
+
+export function rangeSetText(characterName: string, rangeValue: string): string {
+  return `The fusion20 range for ${characterName} is now ${rangeValue}.`;
+}
+
+export const rangeRefusalText = {
+  "not authorised": "Only a player who controls that character, or the GM, can set its range.",
+  "unknown character": "No character has that id.",
+} as const;
