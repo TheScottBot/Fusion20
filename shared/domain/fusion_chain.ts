@@ -6,7 +6,7 @@ export type EndableChainOrigin = "nominator" | "game master" | "turn order" | "s
 
 export type ChainEndOrigin = EndableChainOrigin | "partner attack";
 
-const chainEndReasonByOrigin = {
+export const chainEndReasonByOrigin = {
   nominator: "explicit end",
   "game master": "explicit end",
   "turn order": "turn order advanced",
@@ -16,6 +16,8 @@ const chainEndReasonByOrigin = {
 } as const satisfies Record<ChainEndOrigin, string>;
 
 export type ChainEndReason = (typeof chainEndReasonByOrigin)[ChainEndOrigin];
+
+export const chainEndOrigins = Object.keys(chainEndReasonByOrigin) as readonly ChainEndOrigin[];
 
 interface ChainIdentity {
   readonly chainId: ChainId;
