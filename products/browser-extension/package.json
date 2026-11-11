@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node ../../tools/build/build_product.ts content_script"
+    "build": "node ../../tools/build/build_product.ts content_script=src/content_script.ts page_bridge=src/page_bridge.ts"
   },
   "dependencies": {
     "@fusion20/shared": "workspace:*"

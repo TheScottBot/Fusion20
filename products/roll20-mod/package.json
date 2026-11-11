@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node ../../tools/build/build_product.ts fusion20"
+    "build": "node ../../tools/build/build_product.ts fusion20=src/main.ts"
   },
   "dependencies": {
     "@fusion20/shared": "workspace:*"

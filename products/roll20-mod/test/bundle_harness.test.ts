@@ -9,7 +9,10 @@ import { buildPartyOnPage, createFakeModEnvironment } from "./fake_mod_environme
 const productDirectory = join(import.meta.dirname, "..");
 
 async function buildBundleText(): Promise<string> {
-  const buildResult = await build({ ...describeProductBundle(productDirectory, "fusion20"), write: false });
+  const buildResult = await build({
+    ...describeProductBundle(productDirectory, { fusion20: "src/main.ts" }),
+    write: false,
+  });
   const [outputFile] = buildResult.outputFiles;
   if (outputFile === undefined) {
     throw new Error("esbuild produced no bundle");
