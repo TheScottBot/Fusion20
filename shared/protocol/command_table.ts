@@ -56,6 +56,8 @@ const commandRows: readonly {
   { verb: "roller", commandArguments: [identifierArgument("roll"), identifierArgument("token")] },
 ];
 
+export const commandVerbs: readonly ChatCommand["verb"][] = commandRows.map(({ verb }) => verb);
+
 export const maximumCommandLength = Math.max(
   ...commandRows.map(({ verb, commandArguments }) => {
     const argumentsLength = commandArguments.reduce((totalLength, { name, maximumLength }) => {

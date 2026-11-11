@@ -43,6 +43,12 @@ const chainMessageRows = [
   readonly fields: readonly string[];
 }[];
 
+export const chainMessageWireNames: readonly string[] = chainMessageRows.map(({ wireName }) => wireName);
+
+export function encodeChainEndOrigin(origin: ChainEndOrigin): string {
+  return originToWire(origin);
+}
+
 const headerFieldCount = 4;
 const longestFieldList = Math.max(...chainMessageRows.map((row) => row.fields.length));
 

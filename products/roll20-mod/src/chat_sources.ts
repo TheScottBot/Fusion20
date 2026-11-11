@@ -21,6 +21,9 @@ import { readPlayerPage, readTrimmedText } from "./token_records.ts";
 // Messages the Mod itself sends carry this player id. They are never a player's roll or command.
 const scriptPlayerId = "API";
 
+// A roll whispered to the GM is secret, and announcing it would reveal it to the table (FF109).
+const privateMessageTypes: readonly unknown[] = ["whisper", "gmrollresult"];
+
 function readField(message: ObservedChatMessage, fieldName: string): unknown {
   // isObservedChatMessage has already checked that the message is a plain record.
   return (message as unknown as Readonly<Record<string, unknown>>)[fieldName];
@@ -116,9 +119,14 @@ export function createModAttackRollSource(
     }
   };
   chatMessages.subscribe((message) => {
-    if (isObservedChatMessage(message) && isFromPlayer(message) && Array.isArray(message.inlinerolls)) {
-      deliver(observeRoll(environment, heldRolls, message));
+    if (!isObservedChatMessage(message) || !isFromPlayer(message) || !Array.isArray(message.inlinerolls)) {
+      return;
     }
+    deliver(
+      privateMessageTypes.includes(readField(message, "type"))
+        ? { outcome: "ignored" }
+        : observeRoll(environment, heldRolls, message),
+    );
   });
   createModCommandSource(chatMessages, "roller").subscribe(({ actorId, commandText }) => {
     const parsing = parseCommand(commandText);
