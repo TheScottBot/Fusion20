@@ -60,14 +60,14 @@ function wireRangeCommands(environment: ModEnvironment, chatMessages: ListenerFa
   });
 }
 
-// Chain ids carry the start time, so a chain from before a restart is never mistaken for a new
+// Chain and held roll ids carry the start time, so a chain from before a restart is never mistaken for a new
 // one by a follower reading old chat (FF22).
-function createChainIdFactory(environment: ModEnvironment): () => string {
+function createIdFactory(environment: ModEnvironment, kindPrefix: string): () => string {
   const runStamp = environment.now().toString(36);
-  let chainNumber = 0;
+  let idNumber = 0;
   return () => {
-    chainNumber += 1;
-    return `${runStamp}-${String(chainNumber)}`;
+    idNumber += 1;
+    return `${kindPrefix}${runStamp}-${String(idNumber)}`;
   };
 }
 
@@ -94,7 +94,10 @@ export function installFusion20Mod(
     reportModStartup(environment, configuration);
     coordinator = createFusionCoordinator(
       {
-        attackRolls: createModAttackRollSource(environment, chatMessages),
+        attackRolls: createModAttackRollSource(environment, chatMessages, {
+          createRollId: createIdFactory(environment, "r"),
+          reportFailure: reportFailureOf("attack roll"),
+        }),
         // The Mod leads every chain in its game, so it follows no one (FD11).
         chainMessages: { subscribe: () => () => undefined },
         commands: createModCommandSource(chatMessages, "chain"),
@@ -109,7 +112,7 @@ export function installFusion20Mod(
       },
       {
         mode: "leader",
-        createChainId: createChainIdFactory(environment),
+        createChainId: createIdFactory(environment, "c"),
         chooseNextNominator: qualifyingPartnerNominates,
       },
     );

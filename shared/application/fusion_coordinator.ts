@@ -320,8 +320,9 @@ export function createFusionCoordinator(
       return;
     }
     const { command } = parsing;
-    // Setting a range writes to a character, which belongs to the Mod product (FE9).
-    if (command.verb === "range") {
+    // Setting a range writes to a character, and picking a roller's token finishes reading a
+    // roll. Both belong to the product before a roll or command reaches here (FE9).
+    if (command.verb === "range" || command.verb === "roller") {
       refuseCommand("unsupported command");
       return;
     }

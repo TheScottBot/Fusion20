@@ -5,7 +5,8 @@ export type ChatCommand =
   | { readonly verb: "target"; readonly chain: string; readonly token: string }
   | { readonly verb: "nominate"; readonly chain: string; readonly partner: string }
   | { readonly verb: "end"; readonly chain: string }
-  | { readonly verb: "range"; readonly character: string; readonly value: string };
+  | { readonly verb: "range"; readonly character: string; readonly value: string }
+  | { readonly verb: "roller"; readonly roll: string; readonly token: string };
 
 export type CommandRefusal =
   | "command too long"
@@ -51,6 +52,8 @@ const commandRows: readonly {
   { verb: "nominate", commandArguments: [identifierArgument("chain"), identifierArgument("partner")] },
   { verb: "end", commandArguments: [identifierArgument("chain")] },
   { verb: "range", commandArguments: [identifierArgument("character"), rangeValueArgument] },
+  // FD19: the poster picks which of a character's tokens made a held roll (FF91).
+  { verb: "roller", commandArguments: [identifierArgument("roll"), identifierArgument("token")] },
 ];
 
 export const maximumCommandLength = Math.max(

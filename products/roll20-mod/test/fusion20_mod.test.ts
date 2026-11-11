@@ -99,6 +99,18 @@ describe("a chain through the Mod", () => {
     ]);
   });
 
+  it("starts the chain once the poster picks which of the character's tokens rolled (FF91)", () => {
+    const page = fake.environment.campaign().get("playerpageid") as string;
+    fake.addToken(page, "-Ntokenniamhtwo", { name: "Niamh", represents: "-Ncharniamh" });
+    rollFrom("Niamh", "player-niamh", 20);
+    expect(fake.readPublic()).toEqual([]);
+    const rollId = /roll=([\w-]+)/u.exec(fake.readWhispers('"Niamh\'s Player"')[0] ?? "")?.[1] ?? "";
+    expect(rollId).toMatch(/^r[a-z0-9]+-1$/u);
+    command("player-niamh", `!fusion20 roller roll=${rollId} token=-Ntokenniamhtwo`);
+    expect(fake.readPublic()).toEqual([expect.stringMatching(/:started:[\w-]+:-Ntokenniamhtwo\]$/u)]);
+    expect(installed.readCoordinator()?.readCounters().refusedCommands).toEqual({});
+  });
+
   it("refuses a target from another player and logs the refusal", () => {
     rollFrom("Niamh", "player-niamh", 20);
     command("player-fighter", `!fusion20 target chain=${chainIdOfFirstPrompt()} token=-Ntokengoblin`);

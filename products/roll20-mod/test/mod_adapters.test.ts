@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createModBattlefieldSource } from "../src/battlefield_source.ts";
 import { createModAnnouncer, createModPrompter, escapeChatText } from "../src/chat_output.ts";
 import { createModAttackRollSource, createModCommandSource, routeCommand } from "../src/chat_sources.ts";
+import { createHeldRolls, maximumHeldRolls } from "../src/held_rolls.ts";
 import { createModActorAuthority, createModRangeProfileSource } from "../src/character_records.ts";
 import { createListenerFanOut } from "../src/listener_fan_out.ts";
 import { createModTurnOrderSource, type TurnOrderChange } from "../src/turn_order_source.ts";
@@ -28,6 +29,17 @@ function wireChat(fake: FakeModEnvironment) {
   return { chatMessages, failures };
 }
 
+function testRollOptions() {
+  let rollNumber = 0;
+  return {
+    createRollId: () => {
+      rollNumber += 1;
+      return `r${String(rollNumber)}`;
+    },
+    reportFailure: () => undefined,
+  };
+}
+
 function criticalFrom(characterName: string, playerId: string, naturalD20 = 20) {
   return buildBeyond20Message({
     characterName,
@@ -41,7 +53,7 @@ describeSourceContract("Mod attack roll", () => {
   buildPartyOnPage(fake);
   const { chatMessages } = wireChat(fake);
   return {
-    subscribe: createModAttackRollSource(fake.environment, chatMessages).subscribe,
+    subscribe: createModAttackRollSource(fake.environment, chatMessages, testRollOptions()).subscribe,
     produceSample: () => {
       fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
     },
@@ -112,7 +124,7 @@ describe("the Mod attack roll source", () => {
   function observe(...messages: readonly unknown[]) {
     const { chatMessages } = wireChat(fake);
     const observations: unknown[] = [];
-    createModAttackRollSource(fake.environment, chatMessages).subscribe((observation) =>
+    createModAttackRollSource(fake.environment, chatMessages, testRollOptions()).subscribe((observation) =>
       observations.push(observation),
     );
     for (const message of messages) {
@@ -136,14 +148,6 @@ describe("the Mod attack roll source", () => {
     buildPartyOnPage(fake);
     expect(observe(criticalFrom("Niamh", "player-fighter"))).toEqual([
       { outcome: "unreadable", reason: "poster does not control character" },
-    ]);
-  });
-
-  it("refuses rather than guesses when a character has several tokens (FF91)", () => {
-    const { page, niamh } = buildPartyOnPage(fake);
-    fake.addToken(page.id, "-Ntokenniamhtwo", { name: "Niamh", represents: niamh.id });
-    expect(observe(criticalFrom("Niamh", "player-niamh"))).toEqual([
-      { outcome: "unreadable", reason: "several tokens for character" },
     ]);
   });
 
@@ -205,6 +209,7 @@ describe("Mod command routing", () => {
     ["!fusion20 nominate chain=c1", "chain"],
     ["!fusion20", "chain"],
     ["!fusion20 range character=-Nchar value=melee=5", "range"],
+    ["!fusion20 roller roll=r1 token=-Ntoken", "roller"],
     ["!other-script do things", undefined],
     ["!fusion200 end chain=c1", undefined],
   ])("routes %j to %s", (commandText, route) => {
@@ -462,5 +467,120 @@ describe("the listener fan out", () => {
     fanOut.subscribe((payload) => delivered.push(payload));
     fanOut.deliver(3);
     expect([failures, delivered]).toEqual([["listener broke", "a value that is not an Error was thrown"], [3]]);
+  });
+});
+
+describe("a roll from a character with several tokens (FD19, FF91)", () => {
+  let observations: unknown[];
+
+  beforeEach(() => {
+    const { page, niamh } = buildPartyOnPage(fake);
+    fake.addToken(page.id, "-Ntokenniamhtwo", { name: "Niamh", represents: niamh.id });
+    fake.makeGameMaster("player-gm");
+    fake.addPlayer("player-gm", "The GM");
+    const { chatMessages } = wireChat(fake);
+    observations = [];
+    createModAttackRollSource(fake.environment, chatMessages, testRollOptions()).subscribe((observation) =>
+      observations.push(observation),
+    );
+  });
+
+  function pick(playerId: string, rollId: string, tokenId: string): void {
+    fake.emit("chat:message", {
+      type: "api",
+      playerid: playerId,
+      content: `!fusion20 roller roll=${rollId} token=${tokenId}`,
+    });
+  }
+
+  const niamhWhispers = () => fake.readWhispers('"Niamh\'s Player"');
+
+  it("holds the roll and asks its poster to click the token that rolled", () => {
+    fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
+    expect(observations).toEqual([]);
+    expect(niamhWhispers()).toEqual([
+      "Niamh has more than one token here. Which one made that roll&#63;" +
+        "<br>[Pick the token](!fusion20 roller roll=r1 token=&#64;{target|token_id})",
+    ]);
+  });
+
+  it("observes the attack by the token the poster picks", () => {
+    fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
+    pick("player-niamh", "r1", "-Ntokenniamhtwo");
+    expect(observations).toMatchObject([
+      { outcome: "attack", attackRoll: { rollerReference: "-Ntokenniamhtwo", keptNaturalD20: 20 } },
+    ]);
+  });
+
+  it("lets the GM pick for the poster", () => {
+    fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
+    pick("player-gm", "r1", "-Ntokenniamh");
+    expect(observations).toHaveLength(1);
+  });
+
+  it("refuses another player, and tells them why", () => {
+    fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
+    pick("player-fighter", "r1", "-Ntokenniamh");
+    expect(observations).toEqual([]);
+    expect(fake.readWhispers('"Fighter Player"')).toEqual([
+      "Only the player who made that roll, or the GM, can pick its token.",
+    ]);
+  });
+
+  it("refuses a token that is not the character's, and keeps the roll for another try", () => {
+    fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
+    pick("player-niamh", "r1", "-Ntokengoblin");
+    expect(niamhWhispers().at(-1)).toBe("That token is not one of that character's tokens on this page. Pick again.");
+    pick("player-niamh", "r1", "-Ntokenniamh");
+    expect(observations).toHaveLength(1);
+  });
+
+  it("refuses a second pick, and a roll id it never held", () => {
+    fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
+    pick("player-niamh", "r1", "-Ntokenniamh");
+    pick("player-niamh", "r1", "-Ntokenniamhtwo");
+    pick("player-niamh", "r9", "-Ntokenniamh");
+    expect(observations).toHaveLength(1);
+    expect(niamhWhispers().slice(-2)).toEqual([
+      "That roll is no longer waiting for a token.",
+      "That roll is no longer waiting for a token.",
+    ]);
+  });
+
+  it("asks once when two tabs relay the same roll (FF28)", () => {
+    fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
+    fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
+    expect(niamhWhispers()).toHaveLength(1);
+  });
+
+  it(`forgets the oldest held roll beyond ${String(maximumHeldRolls)}`, () => {
+    for (let rollNumber = 1; rollNumber <= maximumHeldRolls + 1; rollNumber += 1) {
+      const distinctDice = [buildDigitalInlineRoll(20, "critical", rollNumber)];
+      fake.emit(
+        "chat:message",
+        buildBeyond20Message({ characterName: "Niamh", playerId: "player-niamh", inlineRolls: distinctDice }),
+      );
+    }
+    expect(niamhWhispers()).toHaveLength(maximumHeldRolls + 1);
+    pick("player-niamh", "r1", "-Ntokenniamh");
+    pick("player-niamh", "r2", "-Ntokenniamh");
+    expect(observations).toHaveLength(1);
+    expect(niamhWhispers().at(-1)).toBe("That roll is no longer waiting for a token.");
+  });
+
+  it("reports a held roll the domain refuses as unreadable once picked", () => {
+    const heldRolls = createHeldRolls(fake.environment, () => "r1");
+    heldRolls.hold({
+      posterId: "player-niamh",
+      characterName: "Niamh",
+      candidateTokenIds: ["-Ntokenniamh"],
+      keptNaturalD20: 21,
+      criticalThreshold: 20,
+      duplicateKey: "key",
+    });
+    expect(heldRolls.choose("player-niamh", "r1", "-Ntokenniamh")).toEqual({
+      outcome: "unreadable",
+      reason: "natural die out of range",
+    });
   });
 });
