@@ -41,19 +41,24 @@ export function resolveRoller(
 ): RollerResolution {
   const wantedName = normaliseName(poster.characterName);
   const matchingCharacters = characters.filter((character) => normaliseName(character.name) === wantedName);
-  const [character, ...otherMatches] = matchingCharacters;
-  if (character === undefined) {
+  if (matchingCharacters.length === 0) {
     return { outcome: "refused", reason: "unknown character" };
+  }
+  // Only characters the poster controls count, so a player cannot block another character's
+  // rolls by naming a sheet of their own the same (FF108).
+  const controlledCharacters = matchingCharacters.filter((character) => {
+    return (
+      poster.posterIsGameMaster ||
+      character.controlledBy.includes(poster.playerId) ||
+      character.controlledBy.includes(everyPlayer)
+    );
+  });
+  const [character, ...otherMatches] = controlledCharacters;
+  if (character === undefined) {
+    return { outcome: "refused", reason: "poster does not control character" };
   }
   if (otherMatches.length > 0) {
     return { outcome: "refused", reason: "ambiguous character name" };
-  }
-  const posterControls =
-    poster.posterIsGameMaster ||
-    character.controlledBy.includes(poster.playerId) ||
-    character.controlledBy.includes(everyPlayer);
-  if (!posterControls) {
-    return { outcome: "refused", reason: "poster does not control character" };
   }
   const tokenIds = tokensOnPage
     .filter((pageToken) => pageToken.represents === character.id)

@@ -40,6 +40,23 @@ describe("the chat box announcer", () => {
     expect([fake.sent, fake.readDraft()]).toEqual([["Ends. [f20:1:ended:c1:turn-order]"], "half a sentence"]);
   });
 
+  it("puts the draft back even when sending fails", () => {
+    const fake = createFakeChatBox("my draft");
+    const failingBox = {
+      ...fake.chatBox,
+      pressSend: () => {
+        throw new Error("send failed");
+      },
+    };
+    expect(() => {
+      createChatBoxAnnouncer(
+        () => failingBox,
+        () => undefined,
+      ).announce("Hi. [f20:1:started:c1:x]");
+    }).toThrow("send failed");
+    expect(fake.readDraft()).toBe("my draft");
+  });
+
   it("reports a missing chat box instead of posting", () => {
     const failures: string[] = [];
     createChatBoxAnnouncer(

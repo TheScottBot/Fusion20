@@ -173,6 +173,11 @@ describe("the Mod attack roll source", () => {
     ]);
   });
 
+  it.each(["whisper", "gmrollresult"])("ignores a %s roll, so a secret roll is never announced (FF109)", (type) => {
+    buildPartyOnPage(fake);
+    expect(observe({ ...criticalFrom("Niamh", "player-niamh"), type })).toEqual([{ outcome: "ignored" }]);
+  });
+
   it("does not count ordinary chat, its own messages or malformed values as rolls", () => {
     buildPartyOnPage(fake);
     fake.environment.sendChat("Fusion20", "Hello");
@@ -346,6 +351,13 @@ describe("Mod chat output", () => {
         "<br>[Pick a target](!fusion20 target chain=c1 token=&#64;{target|token_id}) " +
         "[End the chain](!fusion20 end chain=c1)",
     ]);
+  });
+
+  it("prompts in public chat for a token every player controls (FF110)", () => {
+    const { page } = buildPartyOnPage(fake);
+    fake.addToken(page.id, "-Ntokenmule", { name: "Mule", controlledby: "all,player-niamh" });
+    createModPrompter(fake.environment).promptForTarget({ chainId: "c1", nominator: "-Ntokenmule" });
+    expect(fake.postedChat.map(({ messageText }) => messageText.startsWith("Mule, pick a target"))).toEqual([true]);
   });
 
   it("whispers to the GM for a token nobody controls", () => {

@@ -1,0 +1,21 @@
+{
+  "name": "Fusion20",
+  "script": "fusion20.js",
+  "version": "0.0.0",
+  "previousversions": [],
+  "description": "Draft, for the author to rewrite before submission (FD22). Tracks fusion criticals for D&D 5e: when a Beyond20 attack rolls a natural critical, Fusion20 asks for a target, offers the allies who can reach and see it, and follows the chain while partners keep critting. Set each character's attack ranges in a fusion20_range attribute, such as melee=5,ranged=150. Allied non player characters are marked with the green status marker.",
+  "authors": "AUTHOR NAME",
+  "roll20userid": "AUTHOR ROLL20 USER ID",
+  "dependencies": [],
+  "modifies": {
+    "attribute.current": "write",
+    "attribute.name": "read",
+    "character.controlledby": "read",
+    "character.name": "read",
+    "graphic.controlledby": "read",
+    "graphic.represents": "read",
+    "graphic.statusmarkers": "read",
+    "page.dynamic_lighting_enabled": "read"
+  },
+  "conflicts": []
+}

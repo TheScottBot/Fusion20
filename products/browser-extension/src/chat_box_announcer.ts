@@ -36,8 +36,12 @@ export function createChatBoxAnnouncer(
       const tag = messageText.slice(tagStart + 1);
       const draft = chatBox.readDraft();
       chatBox.writeDraft(sentence.length > 0 ? `${sentence} ${tag}` : tag);
-      chatBox.pressSend();
-      chatBox.writeDraft(draft);
+      // Put back even if sending throws, so the player never loses what they were typing.
+      try {
+        chatBox.pressSend();
+      } finally {
+        chatBox.writeDraft(draft);
+      }
     },
   };
 }

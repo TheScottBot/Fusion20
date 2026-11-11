@@ -46,6 +46,10 @@ function renderEndButton(chainId: string): string {
   return renderButton(promptButtonLabel.endChain, encodeCommand({ verb: "end", chain: chainId }));
 }
 
+// Stands for every player: a token controlled by all is prompted in public chat, since anyone
+// may act for it (FF110).
+export const everyoneTarget = "everyone";
+
 // A display name holding a quotation mark cannot be whispered to safely, so it is skipped.
 function quotePlayerName(environment: ModEnvironment, playerId: string): string | undefined {
   const playerName = readPlayerName(environment, playerId);
@@ -59,7 +63,11 @@ export function whisperTargetForPlayer(environment: ModEnvironment, playerId: st
 // Whispers go to the players who control the nominator, or to the GM for a token nobody
 // controls.
 export function findWhisperTargets(environment: ModEnvironment, tokenId: string): readonly string[] {
-  const quotedNames = readTokenControllers(environment, tokenId).flatMap((playerId) => {
+  const controllers = readTokenControllers(environment, tokenId);
+  if (controllers.includes("all")) {
+    return [everyoneTarget];
+  }
+  const quotedNames = controllers.flatMap((playerId) => {
     return quotePlayerName(environment, playerId) ?? [];
   });
   const uniqueNames = [...new Set(quotedNames)];
@@ -67,7 +75,10 @@ export function findWhisperTargets(environment: ModEnvironment, tokenId: string)
 }
 
 export function whisperTo(environment: ModEnvironment, whisperTarget: string, messageText: string): void {
-  environment.sendChat(speakerName, `/w ${whisperTarget} ${messageText}`);
+  environment.sendChat(
+    speakerName,
+    whisperTarget === everyoneTarget ? messageText : `/w ${whisperTarget} ${messageText}`,
+  );
 }
 
 export function createModPrompter(environment: ModEnvironment): NominationPrompter {

@@ -64,6 +64,25 @@ describe("resolveRoller, under FD19", () => {
     expect(resolveRoller(posterDetails, characters, tokens)).toEqual({ outcome: "refused", reason });
   });
 
+  it("is not blocked by another player's sheet with the same name (FF108)", () => {
+    const copycat = { id: "character-copycat", name: "fixture fighter", controlledBy: ["player-beta"] };
+    expect([
+      resolveRoller(poster("Fixture Fighter"), [...characters, copycat], tokens),
+      resolveRoller(poster("Fixture Fighter", "player-beta"), [...characters, copycat], tokens),
+    ]).toEqual([
+      { outcome: "resolved", tokenId: "token-fighter" },
+      { outcome: "refused", reason: "no token on page" },
+    ]);
+  });
+
+  it("still asks the GM to tell apart two characters with one name, since the GM controls both", () => {
+    const twinMonster = { id: "character-monster-two", name: "Goblin Boss", controlledBy: [] };
+    expect(resolveRoller(poster("Goblin Boss", "player-gm", true), [...characters, twinMonster], tokens)).toEqual({
+      outcome: "refused",
+      reason: "ambiguous character name",
+    });
+  });
+
   it("refuses a character with no token on the page", () => {
     expect(resolveRoller(poster("Fixture Fighter"), characters, [])).toEqual({
       outcome: "refused",
