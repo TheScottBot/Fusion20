@@ -1,5 +1,6 @@
 import { encodeCommand } from "@fusion20/shared/protocol";
 import {
+  choosePromptPartners,
   ineligiblePartnerText,
   partnerPromptText,
   promptButtonLabel,
@@ -84,18 +85,18 @@ export function createModPrompter(environment: ModEnvironment): NominationPrompt
       ]);
     },
     presentPartners: ({ chainId, nominator, target, assessments }) => {
-      // Hostile tokens are left out, or a large fight would bury the allies under them.
-      const partnerLines = assessments
-        .filter((assessment) => !assessment.reasons.includes("not an ally"))
-        .map((assessment) => {
-          const partnerName = nameOf(assessment.reference);
-          return assessment.isEligible
-            ? renderButton(
-                partnerName,
-                encodeCommand({ verb: "nominate", chain: chainId, partner: assessment.reference }),
-              )
-            : escapeChatText(ineligiblePartnerText(partnerName, assessment.reasons));
-        });
+      const { eligible, ineligibleAllies } = choosePromptPartners(assessments);
+      const partnerLines = [
+        ...eligible.map((assessment) =>
+          renderButton(
+            nameOf(assessment.reference),
+            encodeCommand({ verb: "nominate", chain: chainId, partner: assessment.reference }),
+          ),
+        ),
+        ...ineligibleAllies.map((assessment) =>
+          escapeChatText(ineligiblePartnerText(nameOf(assessment.reference), assessment.reasons)),
+        ),
+      ];
       whisperToNominator(nominator, [
         escapeChatText(partnerPromptText(nameOf(nominator), nameOf(target))),
         ...partnerLines,

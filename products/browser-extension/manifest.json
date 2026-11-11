@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Fusion20",
+  "version": "0.0.0",
+  "description": "Tracks fusion criticals in Roll20 games, for tables without a Pro subscription.",
+  "minimum_chrome_version": "111",
+  "content_scripts": [
+    {
+      "matches": ["https://app.roll20.net/editor/*"],
+      "js": ["page_bridge.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://app.roll20.net/editor/*"],
+      "js": ["content_script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "fusion20@fusion20.invalid",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  }
+}
