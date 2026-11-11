@@ -13,7 +13,8 @@ import {
   resolveRoller,
   type ObservedChatMessage,
 } from "@fusion20/shared/roll20";
-import type { ListenerFanOut } from "./listener_fan_out.ts";
+import { createHeldRolls } from "./held_rolls.ts";
+import { createListenerFanOut, type ListenerFanOut } from "./listener_fan_out.ts";
 import type { ModEnvironment } from "./mod_environment.ts";
 import { readPlayerPage, readTrimmedText } from "./token_records.ts";
 
@@ -39,7 +40,14 @@ function buildDuplicateKey(message: ObservedChatMessage): string {
   return JSON.stringify([message.playerid, message.rolltemplate, message.content, rollTotals]);
 }
 
-function observeRoll(environment: ModEnvironment, message: ObservedChatMessage): AttackObservation {
+type HeldRolls = ReturnType<typeof createHeldRolls>;
+
+// Undefined when the roll is held for its poster to pick a token.
+function observeRoll(
+  environment: ModEnvironment,
+  heldRolls: HeldRolls,
+  message: ObservedChatMessage,
+): AttackObservation | undefined {
   const reading = interpretBeyond20Roll(message);
   if (reading.outcome !== "attack") {
     return reading.outcome === "ignored" ? { outcome: "ignored" } : reading;
@@ -64,13 +72,19 @@ function observeRoll(environment: ModEnvironment, message: ObservedChatMessage):
     characters,
     tokensOnPage,
   );
-  // FD19 asks the poster to choose between several tokens. Until that exists the roll is
-  // refused visibly rather than guessed (FF91).
-  if (resolution.outcome !== "resolved") {
-    return {
-      outcome: "unreadable",
-      reason: resolution.outcome === "choose" ? "several tokens for character" : resolution.reason,
-    };
+  if (resolution.outcome === "choose") {
+    heldRolls.hold({
+      posterId: reading.playerId,
+      characterName: reading.characterName,
+      candidateTokenIds: resolution.tokenIds,
+      keptNaturalD20: reading.keptNaturalD20,
+      criticalThreshold: reading.criticalThreshold,
+      duplicateKey: buildDuplicateKey(message),
+    });
+    return undefined;
+  }
+  if (resolution.outcome === "refused") {
+    return { outcome: "unreadable", reason: resolution.reason };
   }
   const creation = createAttackRoll({
     rollerReference: resolution.tokenId,
@@ -82,31 +96,51 @@ function observeRoll(environment: ModEnvironment, message: ObservedChatMessage):
     : { outcome: "unreadable", reason: creation.reason };
 }
 
+export interface AttackRollSourceOptions {
+  readonly createRollId: () => string;
+  readonly reportFailure: (reason: string) => void;
+}
+
 // Only posts holding inline rolls are rolls, so ordinary chat does not count as observed rolls.
+// A held roll is observed when its poster picks the token, through a roller command.
 export function createModAttackRollSource(
   environment: ModEnvironment,
   chatMessages: ListenerFanOut<unknown>,
+  { createRollId, reportFailure }: AttackRollSourceOptions,
 ): AttackRollSource {
-  return {
-    subscribe: (listener) =>
-      chatMessages.subscribe((message) => {
-        if (isObservedChatMessage(message) && isFromPlayer(message) && Array.isArray(message.inlinerolls)) {
-          listener(observeRoll(environment, message));
-        }
-      }),
+  const observations = createListenerFanOut<AttackObservation>(reportFailure);
+  const heldRolls = createHeldRolls(environment, createRollId);
+  const deliver = (observation: AttackObservation | undefined): void => {
+    if (observation !== undefined) {
+      observations.deliver(observation);
+    }
   };
+  chatMessages.subscribe((message) => {
+    if (isObservedChatMessage(message) && isFromPlayer(message) && Array.isArray(message.inlinerolls)) {
+      deliver(observeRoll(environment, heldRolls, message));
+    }
+  });
+  createModCommandSource(chatMessages, "roller").subscribe(({ actorId, commandText }) => {
+    const parsing = parseCommand(commandText);
+    if (parsing.outcome === "parsed" && parsing.command.verb === "roller") {
+      deliver(heldRolls.choose(actorId, parsing.command.roll, parsing.command.token));
+    }
+  });
+  return { subscribe: observations.subscribe };
 }
 
-export type CommandRoute = "chain" | "range";
+export type CommandRoute = "chain" | "range" | "roller";
 
-// Commands are routed by verb, so the Mod sets ranges itself and the coordinator sees the rest.
+// Commands are routed by verb, so the Mod sets ranges and picks rollers itself, and the
+// coordinator sees the rest.
 // Messages that are not ours at all go nowhere.
 export function routeCommand(commandText: string): CommandRoute | undefined {
   const parsing = parseCommand(commandText);
   if (parsing.outcome === "refused") {
     return parsing.reason === "not a command" ? undefined : "chain";
   }
-  return parsing.command.verb === "range" ? "range" : "chain";
+  const { verb } = parsing.command;
+  return verb === "range" || verb === "roller" ? verb : "chain";
 }
 
 export function createModCommandSource(chatMessages: ListenerFanOut<unknown>, route: CommandRoute): ChainCommandSource {

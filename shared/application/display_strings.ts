@@ -55,7 +55,22 @@ export function partnerPromptText(nominatorName: string, targetName: string): st
 // The name chat shows as the speaker of every announcement and prompt.
 export const speakerName = "Fusion20";
 
-export const promptButtonLabel = { pickTarget: "Pick a target", endChain: "End the chain" } as const;
+export const promptButtonLabel = {
+  pickTarget: "Pick a target",
+  endChain: "End the chain",
+  pickRoller: "Pick the token",
+} as const;
+
+// FD19: a character with several tokens on the page is asked which one rolled (FF91).
+export function rollerPromptText(characterName: string): string {
+  return `${characterName} has more than one token here. Which one made that roll?`;
+}
+
+export const rollerRefusalText = {
+  "unknown roll": "That roll is no longer waiting for a token.",
+  "not your roll": "Only the player who made that roll, or the GM, can pick its token.",
+  "not a candidate": "That token is not one of that character's tokens on this page. Pick again.",
+} as const;
 
 export const unnamedTokenText = "An unnamed token";
 

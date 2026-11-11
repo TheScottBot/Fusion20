@@ -10,6 +10,7 @@ const exampleCommands: readonly ChatCommand[] = [
   { verb: "nominate", chain: "c7", partner: tokenId },
   { verb: "end", chain: "c7" },
   { verb: "range", character: tokenId, value: "melee=15,ranged=150" },
+  { verb: "roller", roll: "r1", token: tokenId },
 ];
 
 describe("every command", () => {
@@ -93,6 +94,7 @@ describe("the command round trip", () => {
       fc.record({ verb: fc.constant("target" as const), chain: identifier, token: identifier }),
       fc.record({ verb: fc.constant("nominate" as const), chain: identifier, partner: identifier }),
       fc.record({ verb: fc.constant("end" as const), chain: identifier }),
+      fc.record({ verb: fc.constant("roller" as const), roll: identifier, token: identifier }),
     );
     fc.assert(
       fc.property(commandArbitrary, (command) => {

@@ -29,11 +29,16 @@ function renderButton(label: string, commandText: string): string {
 // Roll20 fills a target query when the button is pressed. Inside a button its at sign must be
 // written as a character reference, or the query is resolved when the message is sent.
 const targetQuery = "&#64;{target|token_id}";
-const targetQueryPlaceholder = "FUSION20TARGETQUERY";
+export const tokenQueryPlaceholder = "FUSION20TOKENQUERY";
+
+// A button that asks the player to click a token, whose id then takes the placeholder's place.
+export function renderTokenPickButton(label: string, commandText: string): string {
+  return renderButton(label, commandText.replace(tokenQueryPlaceholder, targetQuery));
+}
 
 function renderTargetButton(chainId: string): string {
-  const commandText = encodeCommand({ verb: "target", chain: chainId, token: targetQueryPlaceholder });
-  return renderButton(promptButtonLabel.pickTarget, commandText.replace(targetQueryPlaceholder, targetQuery));
+  const commandText = encodeCommand({ verb: "target", chain: chainId, token: tokenQueryPlaceholder });
+  return renderTokenPickButton(promptButtonLabel.pickTarget, commandText);
 }
 
 function renderEndButton(chainId: string): string {

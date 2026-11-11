@@ -281,7 +281,8 @@ describe("who may act", () => {
     ["the nominator as target", "!fusion20 target chain=c1 token=token-roller", "invalid target"],
     ["an unknown chain", "!fusion20 target chain=c9 token=token-goblin", "unknown chain"],
     ["a malformed command", "!fusion20 target chain=c1", "malformed command"],
-    ["a command this layer does not serve", "!fusion20 range character=abc value=melee=5", "unsupported command"],
+    ["a range command, which the product serves", "!fusion20 range character=abc value=melee=5", "unsupported command"],
+    ["a roller command, which the product serves", "!fusion20 roller roll=r1 token=abc", "unsupported command"],
   ])("refuses %s", (_description, commandText, reason) => {
     harness.attackRolls.emit(rollFor("token-roller", 20));
     command("player-roller", commandText);
