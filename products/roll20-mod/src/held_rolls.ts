@@ -3,6 +3,7 @@ import {
   rollerPromptText,
   rollerRefusalText,
   type AttackObservation,
+  type Audience,
 } from "@fusion20/shared/application";
 import { createAttackRoll } from "@fusion20/shared/domain";
 import { encodeCommand } from "@fusion20/shared/protocol";
@@ -25,6 +26,7 @@ export interface HeldRoll {
   readonly keptNaturalD20: number;
   readonly criticalThreshold: number;
   readonly duplicateKey: string;
+  readonly audience: Audience;
 }
 
 export type RollerChoice =
@@ -75,7 +77,12 @@ export function createHeldRolls(environment: ModEnvironment, createRollId: () =>
     });
     const observation: AttackObservation =
       creation.outcome === "created"
-        ? { outcome: "attack", attackRoll: creation.attackRoll, duplicateKey: heldRoll.duplicateKey }
+        ? {
+            outcome: "attack",
+            attackRoll: creation.attackRoll,
+            duplicateKey: heldRoll.duplicateKey,
+            audience: heldRoll.audience,
+          }
         : { outcome: "unreadable", reason: creation.reason };
     return { outcome: "chosen", observation };
   };

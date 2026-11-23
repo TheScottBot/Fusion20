@@ -76,6 +76,7 @@ describeAnnouncerContract("Mod", () => {
   return {
     announcer: createModAnnouncer(fake.environment),
     readAnnounced: () => fake.readPublic().map(decodeCharacterReferences),
+    readAnnouncedToGameMaster: () => fake.readWhispers("gm").map(decodeCharacterReferences),
   };
 });
 
@@ -140,6 +141,7 @@ describe("the Mod attack roll source", () => {
         outcome: "attack",
         attackRoll: { rollerReference: "-Ntokenniamh", keptNaturalD20: 20, criticalThreshold: 20 },
         duplicateKey: expect.any(String) as string,
+        audience: "table",
       },
     ]);
   });
@@ -173,9 +175,11 @@ describe("the Mod attack roll source", () => {
     ]);
   });
 
-  it.each(["whisper", "gmrollresult"])("ignores a %s roll, so a secret roll is never announced (FF109)", (type) => {
+  it.each(["whisper", "gmrollresult"])("marks a %s roll as for the GM alone (FF109)", (type) => {
     buildPartyOnPage(fake);
-    expect(observe({ ...criticalFrom("Niamh", "player-niamh"), type })).toEqual([{ outcome: "ignored" }]);
+    expect(observe({ ...criticalFrom("Niamh", "player-niamh"), type })).toMatchObject([
+      { outcome: "attack", audience: "game master" },
+    ]);
   });
 
   it("does not count ordinary chat, its own messages or malformed values as rolls", () => {
@@ -427,7 +431,10 @@ describe("Mod chat output", () => {
   });
 
   it("escapes an announcement's sentence and keeps its tag readable", () => {
-    createModAnnouncer(fake.environment).announce("[x](!y) rolled a fusion critical! [f20:1:started:c1:-Ntoken]");
+    createModAnnouncer(fake.environment).announce(
+      "[x](!y) rolled a fusion critical! [f20:1:started:c1:-Ntoken]",
+      "table",
+    );
     expect(fake.readPublic()).toEqual([
       "&#91;x&#93;&#40;&#33;y&#41; rolled a fusion critical&#33; [f20:1:started:c1:-Ntoken]",
     ]);
@@ -547,6 +554,12 @@ describe("a roll from a character with several tokens (FD19, FF91)", () => {
     expect(observations).toHaveLength(1);
   });
 
+  it("keeps a secret roll's audience while it waits for a token", () => {
+    fake.emit("chat:message", { ...criticalFrom("Niamh", "player-niamh"), type: "whisper" });
+    pick("player-niamh", "r1", "-Ntokenniamh");
+    expect(observations).toMatchObject([{ outcome: "attack", audience: "game master" }]);
+  });
+
   it("refuses a second pick, and a roll id it never held", () => {
     fake.emit("chat:message", criticalFrom("Niamh", "player-niamh"));
     pick("player-niamh", "r1", "-Ntokenniamh");
@@ -589,6 +602,7 @@ describe("a roll from a character with several tokens (FD19, FF91)", () => {
       keptNaturalD20: 21,
       criticalThreshold: 20,
       duplicateKey: "key",
+      audience: "game master",
     });
     expect(heldRolls.choose("player-niamh", "r1", "-Ntokenniamh")).toEqual({
       outcome: "unreadable",

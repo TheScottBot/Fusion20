@@ -111,6 +111,22 @@ describe("a chain through the Mod", () => {
     expect(installed.readCoordinator()?.readCounters().refusedCommands).toEqual({});
   });
 
+  it("runs a chain from a roll whispered to the GM without telling the table (FF109)", () => {
+    fake.emit("chat:message", {
+      ...buildBeyond20Message({
+        characterName: "Niamh",
+        playerId: "player-niamh",
+        inlineRolls: [buildDigitalInlineRoll(20, "critical")],
+      }),
+      type: "whisper",
+    });
+    expect(fake.readPublic()).toEqual([]);
+    expect(fake.readWhispers("gm")).toEqual([
+      expect.stringMatching(/^Niamh rolled a fusion critical&#33; \[f20:1:started:/u),
+    ]);
+    expect(fake.readWhispers('"Niamh\'s Player"')[0]).toContain("Pick a target");
+  });
+
   it("refuses a target from another player and logs the refusal", () => {
     rollFrom("Niamh", "player-niamh", 20);
     command("player-fighter", `!fusion20 target chain=${chainIdOfFirstPrompt()} token=-Ntokengoblin`);

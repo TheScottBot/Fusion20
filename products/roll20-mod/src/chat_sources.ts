@@ -1,5 +1,6 @@
 import type {
   AttackObservation,
+  Audience,
   AttackRollSource,
   ChainCommand,
   ChainCommandSource,
@@ -21,8 +22,12 @@ import { readPlayerPage, readTrimmedText } from "./token_records.ts";
 // Messages the Mod itself sends carry this player id. They are never a player's roll or command.
 const scriptPlayerId = "API";
 
-// A roll whispered to the GM is secret, and announcing it would reveal it to the table (FF109).
+// A roll whispered to the GM is secret, so what it causes is announced to the GM alone (FF109).
 const privateMessageTypes: readonly unknown[] = ["whisper", "gmrollresult"];
+
+function readAudience(message: ObservedChatMessage): Audience {
+  return privateMessageTypes.includes(readField(message, "type")) ? "game master" : "table";
+}
 
 function readField(message: ObservedChatMessage, fieldName: string): unknown {
   // isObservedChatMessage has already checked that the message is a plain record.
@@ -83,6 +88,7 @@ function observeRoll(
       keptNaturalD20: reading.keptNaturalD20,
       criticalThreshold: reading.criticalThreshold,
       duplicateKey: buildDuplicateKey(message),
+      audience: readAudience(message),
     });
     return undefined;
   }
@@ -95,7 +101,12 @@ function observeRoll(
     criticalThreshold: reading.criticalThreshold,
   });
   return creation.outcome === "created"
-    ? { outcome: "attack", attackRoll: creation.attackRoll, duplicateKey: buildDuplicateKey(message) }
+    ? {
+        outcome: "attack",
+        attackRoll: creation.attackRoll,
+        duplicateKey: buildDuplicateKey(message),
+        audience: readAudience(message),
+      }
     : { outcome: "unreadable", reason: creation.reason };
 }
 
@@ -122,11 +133,7 @@ export function createModAttackRollSource(
     if (!isObservedChatMessage(message) || !isFromPlayer(message) || !Array.isArray(message.inlinerolls)) {
       return;
     }
-    deliver(
-      privateMessageTypes.includes(readField(message, "type"))
-        ? { outcome: "ignored" }
-        : observeRoll(environment, heldRolls, message),
-    );
+    deliver(observeRoll(environment, heldRolls, message));
   });
   createModCommandSource(chatMessages, "roller").subscribe(({ actorId, commandText }) => {
     const parsing = parseCommand(commandText);

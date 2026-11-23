@@ -56,6 +56,8 @@ Each announcement is a sentence for people, a space, and a tag for software:
 Niamh nominates FighterMan to attack the Goblin. [f20:1:nominated:c7:-Nroller:-Nfighter:-Ngoblin]
 ```
 
+Announcements caused by a roll whispered to the GM are whispered to the GM in the same form, so a reader that is not the GM never sees them.
+
 Only the last word is read. A character named like a tag stays part of the sentence, because it is never last. The sentence is at most 500 characters, and a reader never interprets it.
 
 The tag is `[f20:` followed by fields joined by colons, then `]`:

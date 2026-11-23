@@ -45,7 +45,11 @@ describeSourceContract("in memory turn order", () => {
 
 describeAnnouncerContract("recording", () => {
   const announcer = doubles.createRecordingAnnouncer();
-  return { announcer, readAnnounced: () => announcer.announcements };
+  return {
+    announcer,
+    readAnnounced: () => announcer.announcements,
+    readAnnouncedToGameMaster: () => announcer.gameMasterAnnouncements,
+  };
 });
 
 describePrompterContract("recording", () => {

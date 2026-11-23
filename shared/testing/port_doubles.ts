@@ -140,11 +140,18 @@ export function createRecordingPrompter(): RecordingPrompter {
 
 export interface RecordingAnnouncer extends ChainAnnouncer {
   readonly announcements: string[];
+  readonly gameMasterAnnouncements: string[];
 }
 
 export function createRecordingAnnouncer(): RecordingAnnouncer {
   const announcements: string[] = [];
-  return { announcements, announce: (messageText) => announcements.push(messageText) };
+  const gameMasterAnnouncements: string[] = [];
+  return {
+    announcements,
+    gameMasterAnnouncements,
+    announce: (messageText, audience) =>
+      (audience === "table" ? announcements : gameMasterAnnouncements).push(messageText),
+  };
 }
 
 export interface RecordingDiagnostics extends DiagnosticsSink {

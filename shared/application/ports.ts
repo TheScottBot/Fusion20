@@ -9,12 +9,17 @@ import type { SightScene, SightTarget, SightViewer } from "../domain/sight_polic
 
 export type Unsubscribe = () => void;
 
+// Who may see what a roll caused. A roll whispered to the GM keeps its consequences quiet too
+// (FF109): its chain is announced to the GM alone.
+export type Audience = "table" | "game master";
+
 export type AttackObservation =
   | {
       readonly outcome: "attack";
       readonly attackRoll: AttackRoll;
       // Same player, character and dice, so two tabs posting one roll can be told apart (FF28).
       readonly duplicateKey: string;
+      readonly audience: Audience;
     }
   | { readonly outcome: "ignored" }
   | { readonly outcome: "unreadable"; readonly reason: string };
@@ -73,7 +78,7 @@ export interface NominationPrompter {
 }
 
 export interface ChainAnnouncer {
-  readonly announce: (messageText: string) => void;
+  readonly announce: (messageText: string, audience: Audience) => void;
 }
 
 export interface ChainMessageSource {

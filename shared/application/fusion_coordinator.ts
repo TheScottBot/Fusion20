@@ -16,6 +16,7 @@ import { parseCommand, type ChatCommand } from "../protocol/command_table.ts";
 import { describeChainEvent } from "./display_strings.ts";
 import type {
   AttackObservation,
+  Audience,
   BattlefieldSnapshot,
   ChainCommand,
   CoordinatorMode,
@@ -72,6 +73,8 @@ export function createFusionCoordinator(
 ): FusionCoordinator {
   let registry: chainRegistry.FusionChainRegistry = chainRegistry.createFusionChainRegistry();
   const ownChainIds = new Set<ChainId>();
+  // Chains started by a roll whispered to the GM, which stay quiet until they end (FF109).
+  const quietChainIds = new Set<ChainId>();
   const followedChains = new Map<ChainId, FollowedChain>();
   const recentRolls = new Map<string, number>();
   const unsubscribers: Unsubscribe[] = [];
@@ -176,8 +179,17 @@ export function createFusionCoordinator(
     ports.prompter.presentPartners({ chainId, nominator: chain.nominator, target: chain.target, assessments });
   }
 
-  function reactToEvent(chainEvent: ChainEvent): void {
-    ports.announcer.announce(encodeChainMessage(chainEvent, describeChainEvent(chainEvent, nameLookup())));
+  // A quiet chain is announced to the GM alone. In an open chain, only what a secret roll
+  // decided is quiet: whether that partner's attack qualified, and an end it caused.
+  function reactToEvent(chainEvent: ChainEvent, causedBySecretRoll: boolean): void {
+    if (chainEvent.kind === "chain started" && causedBySecretRoll) {
+      quietChainIds.add(chainEvent.chainId);
+    }
+    const audience: Audience = causedBySecretRoll || quietChainIds.has(chainEvent.chainId) ? "game master" : "table";
+    if (chainEvent.kind === "chain ended") {
+      quietChainIds.delete(chainEvent.chainId);
+    }
+    ports.announcer.announce(encodeChainMessage(chainEvent, describeChainEvent(chainEvent, nameLookup())), audience);
     switch (chainEvent.kind) {
       case "chain started":
         counters.chainsStarted += 1;
@@ -196,10 +208,10 @@ export function createFusionCoordinator(
     }
   }
 
-  function commitChange(change: chainRegistry.RegistryChange): void {
+  function commitChange(change: chainRegistry.RegistryChange, causedBySecretRoll = false): void {
     registry = change.registry;
     for (const chainEvent of change.events) {
-      reactToEvent(chainEvent);
+      reactToEvent(chainEvent, causedBySecretRoll);
     }
   }
 
@@ -233,7 +245,10 @@ export function createFusionCoordinator(
     if (qualifiesForFusionCritical(observation.attackRoll)) {
       counters.qualifyingCriticals += 1;
     }
-    commitChange(chainRegistry.routeAttackRoll(registry, observation.attackRoll, rollRoutingRules));
+    commitChange(
+      chainRegistry.routeAttackRoll(registry, observation.attackRoll, rollRoutingRules),
+      observation.audience === "game master",
+    );
   }
 
   // The nominator acts, or the GM for them. While a partner's attack is pending there is no

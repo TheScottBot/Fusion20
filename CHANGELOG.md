@@ -11,6 +11,7 @@ Changes to each product, newest first. Versions follow semantic versioning once 
 - Checks reach in squares and, when the page's lighting is on, sight through walls, doors, windows and light.
 - Ends a chain when an attack doesn't crit, nobody eligible is left, the nominator or GM ends it, or the turn moves on.
 - Asks which token rolled when a character has more than one on the page.
+- Keeps a roll whispered to the GM quiet: its chain is announced to the GM alone.
 - Sets a character's attack ranges with `!fusion20 range`.
 - Logs a startup line, refused commands and adapter failures to the Mod Output Console.
 

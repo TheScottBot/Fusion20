@@ -2,6 +2,8 @@ import { describeAnnouncerContract } from "@fusion20/shared/testing";
 import { describe, expect, it } from "vitest";
 import { createChatBoxAnnouncer, neutraliseTypedText, type ChatBox } from "../src/chat_box_announcer.ts";
 
+const gameMasterWhisper = "/w gm ";
+
 function createFakeChatBox(initialDraft = "") {
   let draft = initialDraft;
   const sent: string[] = [];
@@ -26,7 +28,11 @@ describeAnnouncerContract("chat box", () => {
       () => fake.chatBox,
       () => undefined,
     ),
-    readAnnounced: () => fake.sent,
+    readAnnounced: () => fake.sent.filter((sentText) => !sentText.startsWith(gameMasterWhisper)),
+    readAnnouncedToGameMaster: () =>
+      fake.sent
+        .filter((sentText) => sentText.startsWith(gameMasterWhisper))
+        .map((sentText) => sentText.slice(gameMasterWhisper.length)),
   };
 });
 
@@ -36,7 +42,7 @@ describe("the chat box announcer", () => {
     createChatBoxAnnouncer(
       () => fake.chatBox,
       () => undefined,
-    ).announce("Ends. [f20:1:ended:c1:turn-order]");
+    ).announce("Ends. [f20:1:ended:c1:turn-order]", "table");
     expect([fake.sent, fake.readDraft()]).toEqual([["Ends. [f20:1:ended:c1:turn-order]"], "half a sentence"]);
   });
 
@@ -52,7 +58,7 @@ describe("the chat box announcer", () => {
       createChatBoxAnnouncer(
         () => failingBox,
         () => undefined,
-      ).announce("Hi. [f20:1:started:c1:x]");
+      ).announce("Hi. [f20:1:started:c1:x]", "table");
     }).toThrow("send failed");
     expect(fake.readDraft()).toBe("my draft");
   });
@@ -62,7 +68,7 @@ describe("the chat box announcer", () => {
     createChatBoxAnnouncer(
       () => undefined,
       (reason) => failures.push(reason),
-    ).announce("Hi. [f20:1:started:c1:x]");
+    ).announce("Hi. [f20:1:started:c1:x]", "table");
     expect(failures).toEqual(["chat box not found"]);
   });
 
@@ -73,6 +79,7 @@ describe("the chat box announcer", () => {
       () => undefined,
     ).announce(
       "/w gm [x](!fusion20 end chain=c9) @{target|hp} [[1d20]] rolled a fusion critical! [f20:1:started:c1:-Ntoken]",
+      "table",
     );
     expect(fake.sent).toEqual([
       "w gm x!fusion20 end chainc9 targethp 1d20 rolled a fusion critical! [f20:1:started:c1:-Ntoken]",
@@ -84,7 +91,7 @@ describe("the chat box announcer", () => {
     createChatBoxAnnouncer(
       () => fake.chatBox,
       () => undefined,
-    ).announce("@@@ [f20:1:started:c1:x]");
+    ).announce("@@@ [f20:1:started:c1:x]", "table");
     expect(fake.sent).toEqual(["[f20:1:started:c1:x]"]);
   });
 });
@@ -100,5 +107,16 @@ describe("neutraliseTypedText", () => {
     ],
   ])("turns %j into %j", (sentence, expected) => {
     expect(neutraliseTypedText(sentence)).toBe(expected);
+  });
+});
+
+describe("a quiet announcement (FF109)", () => {
+  it("is typed as a whisper to the GM, with the sentence still made safe", () => {
+    const fake = createFakeChatBox();
+    createChatBoxAnnouncer(
+      () => fake.chatBox,
+      () => undefined,
+    ).announce("[x] rolled a fusion critical! [f20:1:started:c1:-Ntoken]", "game master");
+    expect(fake.sent).toEqual(["/w gm x rolled a fusion critical! [f20:1:started:c1:-Ntoken]"]);
   });
 });

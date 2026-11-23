@@ -59,17 +59,28 @@ export interface AnnouncerContractSubject {
   readonly announcer: ChainAnnouncer;
   // What actually reached the game, as the real adapter's fake environment records it.
   readonly readAnnounced: () => readonly string[];
+  // What reached the GM alone, and so not the table.
+  readonly readAnnouncedToGameMaster: () => readonly string[];
 }
 
 export function describeAnnouncerContract(portName: string, createSubject: () => AnnouncerContractSubject): void {
   describe(`${portName} announcer contract`, () => {
     it("posts each announcement once, unchanged and in order", () => {
       const subject = createSubject();
-      subject.announcer.announce("First message. [f20:1:started:c1:roller]");
-      subject.announcer.announce("Second message. [f20:1:target:c1:goblin]");
+      subject.announcer.announce("First message. [f20:1:started:c1:roller]", "table");
+      subject.announcer.announce("Second message. [f20:1:target:c1:goblin]", "table");
       expect(subject.readAnnounced()).toEqual([
         "First message. [f20:1:started:c1:roller]",
         "Second message. [f20:1:target:c1:goblin]",
+      ]);
+    });
+
+    it("gives a game master announcement to the GM alone", () => {
+      const subject = createSubject();
+      subject.announcer.announce("Quiet message. [f20:1:started:c2:roller]", "game master");
+      expect([subject.readAnnounced(), subject.readAnnouncedToGameMaster()]).toEqual([
+        [],
+        ["Quiet message. [f20:1:started:c2:roller]"],
       ]);
     });
   });

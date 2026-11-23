@@ -24,7 +24,7 @@ export function createChatBoxAnnouncer(
   reportFailure: (reason: string) => void,
 ): ChainAnnouncer {
   return {
-    announce: (messageText) => {
+    announce: (messageText, audience) => {
       const chatBox = findChatBox();
       if (chatBox === undefined) {
         reportFailure("chat box not found");
@@ -35,7 +35,9 @@ export function createChatBoxAnnouncer(
       const sentence = neutraliseTypedText(messageText.slice(0, Math.max(tagStart, 0)));
       const tag = messageText.slice(tagStart + 1);
       const draft = chatBox.readDraft();
-      chatBox.writeDraft(sentence.length > 0 ? `${sentence} ${tag}` : tag);
+      // A quiet announcement is typed as a whisper to the GM (FF109).
+      const whisperPrefix = audience === "table" ? "" : "/w gm ";
+      chatBox.writeDraft(`${whisperPrefix}${sentence.length > 0 ? `${sentence} ${tag}` : tag}`);
       // Put back even if sending throws, so the player never loses what they were typing.
       try {
         chatBox.pressSend();

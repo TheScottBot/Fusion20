@@ -43,7 +43,11 @@ const battlefieldSnapshot = {
 
 let harness: ReturnType<typeof createHarness>;
 
-function createHarness(mode: "leader" | "follower" = "leader", nominatorRule = qualifyingPartnerNominates) {
+function createHarness(
+  mode: "leader" | "follower" = "leader",
+  nominatorRule = qualifyingPartnerNominates,
+  chainIdOverride?: () => string,
+) {
   const attackRolls = createInMemoryEmitter<AttackObservation>();
   const chainMessages = createInMemoryEmitter<string>();
   const commands = createInMemoryEmitter<ChainCommand>();
@@ -81,10 +85,12 @@ function createHarness(mode: "leader" | "follower" = "leader", nominatorRule = q
     },
     {
       mode,
-      createChainId: () => {
-        nextChainNumber += 1;
-        return `c${String(nextChainNumber)}`;
-      },
+      createChainId:
+        chainIdOverride ??
+        (() => {
+          nextChainNumber += 1;
+          return `c${String(nextChainNumber)}`;
+        }),
       chooseNextNominator: nominatorRule,
     },
   );
@@ -114,6 +120,7 @@ function rollFor(
     outcome: "attack",
     attackRoll: buildAttackRoll({ rollerReference: reference, keptNaturalD20 }),
     duplicateKey,
+    audience: "table",
   };
 }
 
@@ -305,6 +312,47 @@ describe("who may act", () => {
     harness.attackRolls.emit(rollFor("token-roller", 20));
     command("player-roller", "!fusion20 nominate chain=c1 partner=token-ally");
     expect(harness.coordinator.readCounters().refusedCommands).toEqual({ "wrong stage": 1 });
+  });
+});
+
+describe("rolls whispered to the GM (FF109)", () => {
+  function secretRollFor(reference: string, keptNaturalD20: number): AttackObservation {
+    return { ...rollFor(reference, keptNaturalD20), audience: "game master" } as AttackObservation;
+  }
+
+  const tagsOf = (messages: readonly string[]) => messages.map((message) => message.split(" ").at(-1));
+
+  it("runs a quiet chain announced to the GM alone, still prompting the nominator", () => {
+    harness.attackRolls.emit(secretRollFor("token-roller", 20));
+    command("player-roller", "!fusion20 target chain=c1 token=token-goblin");
+    command("player-roller", "!fusion20 nominate chain=c1 partner=token-ally");
+    harness.attackRolls.emit(rollFor("token-ally", 4));
+    expect(harness.announcer.announcements).toEqual([]);
+    expect(tagsOf(harness.announcer.gameMasterAnnouncements)).toEqual([
+      "[f20:1:started:c1:token-roller]",
+      "[f20:1:target:c1:token-goblin]",
+      "[f20:1:nominated:c1:token-roller:token-ally:token-goblin]",
+      "[f20:1:ended:c1:partner-attack]",
+    ]);
+    expect(harness.prompter.targetPrompts).toHaveLength(1);
+  });
+
+  it("keeps only a secret partner attack's result quiet in an open chain", () => {
+    startChainAndTarget();
+    command("player-roller", "!fusion20 nominate chain=c1 partner=token-ally");
+    harness.attackRolls.emit(secretRollFor("token-ally", 4));
+    expect(tagsOf(harness.announcer.announcements).at(-1)).toBe(
+      "[f20:1:nominated:c1:token-roller:token-ally:token-goblin]",
+    );
+    expect(tagsOf(harness.announcer.gameMasterAnnouncements)).toEqual(["[f20:1:ended:c1:partner-attack]"]);
+  });
+
+  it("forgets a quiet chain once it ends, so a later chain with a reused id is open", () => {
+    harness = createHarness("leader", qualifyingPartnerNominates, () => "same");
+    harness.attackRolls.emit(secretRollFor("token-roller", 20));
+    command("player-gm", "!fusion20 end chain=same");
+    harness.attackRolls.emit(rollFor("token-roller", 20));
+    expect(tagsOf(harness.announcer.announcements)).toEqual(["[f20:1:started:same:token-roller]"]);
   });
 });
 

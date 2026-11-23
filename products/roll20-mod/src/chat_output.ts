@@ -121,11 +121,11 @@ export function createModPrompter(environment: ModEnvironment): NominationPrompt
 // extension to read (FD12). Everything before it is escaped.
 export function createModAnnouncer(environment: ModEnvironment): ChainAnnouncer {
   return {
-    announce: (messageText) => {
+    announce: (messageText, audience) => {
       const tagStart = messageText.lastIndexOf(" ");
       const sentence = messageText.slice(0, Math.max(tagStart, 0));
       const tag = messageText.slice(tagStart + 1);
-      environment.sendChat(speakerName, `${escapeChatText(sentence)} ${tag}`);
+      whisperTo(environment, audience === "table" ? everyoneTarget : "gm", `${escapeChatText(sentence)} ${tag}`);
     },
   };
 }

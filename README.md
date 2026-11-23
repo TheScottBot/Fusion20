@@ -72,7 +72,7 @@ Sight is checked only when the page's lighting is on. With it off, Fusion20 chec
 - Fusion20 uses the page the player ribbon is on. Players split onto their own pages aren't followed.
 - Announcements use token names. If a monster's name is hidden from players, it still appears in the announcement.
 - Chains live in memory, so a sandbox restart ends them all, and says so in the Mod log.
-- A roll whispered to the GM is never tracked, so a secret roll is never announced.
+- A roll whispered to the GM still counts, but its chain is announced to the GM alone, so a secret roll stays secret. In an open chain, only a secret partner attack's result is kept to the GM.
 - Prompts for a token every player controls go to public chat, since anyone may act for it.
 - A one entry turn order never looks like the turn moving on. Sorting the turn order, or removing whoever is on top, does.
 
