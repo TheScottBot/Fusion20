@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "build": "pnpm --filter \"./products/*\" build",
     "checks": "node tools/checks/src/repository_checks.ts",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm checks"
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm checks",
+    "package:mod": "pnpm build && node tools/build/package_mod_library.ts"
   },
   "devDependencies": {
     "@types/node": "26.6.6",

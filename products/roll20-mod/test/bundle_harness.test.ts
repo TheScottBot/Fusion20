@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createContext, runInContext } from "node:vm";
 import { buildBeyond20Message, buildDigitalInlineRoll } from "@fusion20/shared/testing";
@@ -53,8 +54,13 @@ describe("the Mod bundle", () => {
     expect(fake.readWhispers('"Niamh\'s Player"')).toHaveLength(1);
   });
 
-  it("starts with its wrapper, so no directive reaches the scripts it is joined to (FF93)", async () => {
-    expect((await buildBundleText()).startsWith("(() => {")).toBe(true);
+  it("opens with its name, version and setup, then its wrapper, so no directive reaches the scripts it is joined to (FF93)", async () => {
+    const bundleLines = (await buildBundleText()).split("\n");
+    const firstCodeLine = bundleLines.find((line) => !line.startsWith("//"));
+    const { version } = JSON.parse(readFileSync(join(productDirectory, "package.json"), "utf8")) as { version: string };
+    expect(bundleLines[0]).toBe(`// Fusion20 ${version}, a Roll20 Mod. MIT licence.`);
+    expect(bundleLines.some((line) => line.includes("defaultAllyMarker"))).toBe(true);
+    expect(firstCodeLine).toBe("(() => {");
   });
 
   it("leaves no name of its own in the shared global scope", async () => {

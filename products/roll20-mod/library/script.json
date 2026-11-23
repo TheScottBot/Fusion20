@@ -3,19 +3,22 @@
   "script": "fusion20.js",
   "version": "0.0.0",
   "previousversions": [],
-  "description": "Draft, for the author to rewrite before submission (FD22). Tracks fusion criticals for D&D 5e: when a Beyond20 attack rolls a natural critical, Fusion20 asks for a target, offers the allies who can reach and see it, and follows the chain while partners keep critting. Set each character's attack ranges in a fusion20_range attribute, such as melee=5,ranged=150. Allied non player characters are marked with the green status marker.",
+  "description": "Draft, to be rewritten by a person before submission (FD22).\n\nFusion20 tracks fusion criticals for D&D 5e. When a player's Beyond20 attack rolls a natural critical, Fusion20 asks them for a target, offers the allies who can reach and see it, and follows the chain while partners keep rolling criticals.\n\n**Needs:** Beyond20 posting attacks to Roll20, the D&D 5e 2014 sheet, and a square grid in feet.\n\n**Setup:** give each character an attribute named `fusion20_range`, such as `melee=5,ranged=150,cantrip=120` in feet. Player controlled tokens are allies. Mark allied non player characters with the green status marker.\n\n**Commands:**\n* `!fusion20 range character=@{selected|character_id} value=melee=10` sets the selected character's ranges.\n* `!fusion20 target`, `nominate`, `end` and `roller` are sent by the buttons Fusion20 whispers, and need no typing.\n\n**Example:** Aria rolls a natural 20. Fusion20 whispers her a Pick a target button, she clicks the ogre, then picks Bram from the allies who can reach it. Bram attacks, and if he also crits, he picks the next partner.\n\nA chain ends when an attack does not crit, nobody eligible is left, someone presses End the chain, or the turn moves on.",
   "authors": "AUTHOR NAME",
   "roll20userid": "AUTHOR ROLL20 USER ID",
   "dependencies": [],
   "modifies": {
-    "attribute.current": "write",
+    "attribute.current": "read, write",
     "attribute.name": "read",
+    "campaign.playerpageid": "read",
+    "campaign.turnorder": "read",
     "character.controlledby": "read",
     "character.name": "read",
     "graphic.controlledby": "read",
     "graphic.represents": "read",
     "graphic.statusmarkers": "read",
-    "page.dynamic_lighting_enabled": "read"
+    "page.dynamic_lighting_enabled": "read",
+    "player.displayname": "read"
   },
   "conflicts": []
 }

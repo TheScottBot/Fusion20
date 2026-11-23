@@ -1,0 +1,15 @@
+// Fusion20 {{version}}, a Roll20 Mod. MIT licence.
+//
+// Tracks fusion criticals for D&D 5e. When a player's Beyond20 attack rolls a natural critical,
+// Fusion20 whispers them a button to pick a target, offers the allies who can reach and see it,
+// and follows the chain while partners keep rolling criticals.
+//
+// Setup: give each character an attribute named fusion20_range, such as melee=5,ranged=150 in
+// feet. Player controlled tokens are allies. Mark allied non player characters with the green
+// status marker.
+//
+// Command: !fusion20 range character=@{selected|character_id} value=melee=10 sets ranges. The
+// other commands are sent by the buttons Fusion20 whispers.
+//
+// Configuration: to use a status marker other than green for allies, change defaultAllyMarker
+// near the end of this script.

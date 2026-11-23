@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { findLibraryProblems, unfilledProblems } from "../../../tools/build/mod_library.ts";
 
 async function readProductJson(relativePath: string): Promise<Record<string, unknown>> {
   return JSON.parse(await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8")) as Record<string, unknown>;
@@ -18,6 +19,14 @@ describe("the Mod library package", () => {
   it("names the script the build makes", () => {
     const [builtName] = /(\w+)=src\/main\.ts/u.exec(packageJson.scripts.build)?.slice(1) ?? [];
     expect(scriptJson.script).toBe(`${String(builtName)}.js`);
+  });
+
+  it("meets the library's schema, apart from the fields a person fills in before submission", () => {
+    expect(findLibraryProblems(scriptJson)).toEqual([
+      unfilledProblems.authors,
+      unfilledProblems.roll20userid,
+      unfilledProblems.description,
+    ]);
   });
 
   it("depends on no other script", () => {
