@@ -2,6 +2,7 @@
   "name": "@fusion20/shared",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "exports": {
     "./domain": "./domain/index.ts",

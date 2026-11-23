@@ -4,7 +4,7 @@ import { buildBeyond20Message, buildDigitalInlineRoll } from "@fusion20/shared/t
 import { build } from "esbuild";
 import { describe, expect, it } from "vitest";
 import { describeProductBundle } from "../../../tools/build/product_bundle.ts";
-import { buildPartyOnPage, createFakeModEnvironment } from "./fake_mod_environment.ts";
+import { buildPartyOnPage, createFakeModEnvironment, renderForPlayers } from "./fake_mod_environment.ts";
 
 const productDirectory = join(import.meta.dirname, "..");
 
@@ -47,8 +47,8 @@ describe("the Mod bundle", () => {
       }),
     );
     expect(fake.loggedLines).toHaveLength(2);
-    expect(fake.readPublic()).toEqual([
-      expect.stringMatching(/^Niamh rolled a fusion critical&#33; \[f20:1:started:/u),
+    expect(fake.readPublic().map(renderForPlayers)).toEqual([
+      expect.stringMatching(/^Niamh rolled a fusion critical! \[f20:1:started:/u),
     ]);
     expect(fake.readWhispers('"Niamh\'s Player"')).toHaveLength(1);
   });

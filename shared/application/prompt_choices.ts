@@ -9,10 +9,13 @@ export interface PromptPartnerChoices {
   readonly ineligibleAllies: readonly PartnerAssessment[];
 }
 
-// Hostile tokens are left out, or a large fight would bury the allies under them (FF95). The
-// domain's order, eligible first and then by distance, is kept.
+// Hostile tokens are left out, or a large fight would bury the allies under them (FF95), and so
+// is the target, which the nominator has just picked (FF113). The domain's order, eligible first
+// and then by distance, is kept.
 export function choosePromptPartners(assessments: readonly PartnerAssessment[]): PromptPartnerChoices {
-  const allies = assessments.filter((assessment) => !assessment.reasons.includes("not an ally"));
+  const allies = assessments.filter(
+    (assessment) => !assessment.reasons.includes("not an ally") && !assessment.reasons.includes("is the target"),
+  );
   return {
     eligible: allies.filter((assessment) => assessment.isEligible),
     ineligibleAllies: allies.filter((assessment) => !assessment.isEligible),

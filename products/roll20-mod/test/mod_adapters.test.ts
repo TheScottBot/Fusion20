@@ -5,6 +5,7 @@ import {
   describePrompterContract,
   describeSourceContract,
 } from "@fusion20/shared/testing";
+import { parseChainMessage } from "@fusion20/shared/protocol";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createModBattlefieldSource } from "../src/battlefield_source.ts";
 import { createModAnnouncer, createModPrompter, escapeChatText } from "../src/chat_output.ts";
@@ -16,7 +17,7 @@ import { createModTurnOrderSource, type TurnOrderChange } from "../src/turn_orde
 import {
   buildPartyOnPage,
   createFakeModEnvironment,
-  decodeCharacterReferences,
+  renderForPlayers,
   type FakeModEnvironment,
 } from "./fake_mod_environment.ts";
 
@@ -75,8 +76,8 @@ describeAnnouncerContract("Mod", () => {
   const fake = createFakeModEnvironment();
   return {
     announcer: createModAnnouncer(fake.environment),
-    readAnnounced: () => fake.readPublic().map(decodeCharacterReferences),
-    readAnnouncedToGameMaster: () => fake.readWhispers("gm").map(decodeCharacterReferences),
+    readAnnounced: () => fake.readPublic().map(renderForPlayers),
+    readAnnouncedToGameMaster: () => fake.readWhispers("gm").map(renderForPlayers),
   };
 });
 
@@ -430,14 +431,16 @@ describe("Mod chat output", () => {
     expect(whispers).toContain("[&#91;x&#93;&#40;&#33;fusion20 end chain&#61;c9&#41;](!fusion20 nominate");
   });
 
-  it("escapes an announcement's sentence and keeps its tag readable", () => {
+  it("escapes an announcement's sentence, shows its tag small and grey, and keeps the tag last (FF114)", () => {
     createModAnnouncer(fake.environment).announce(
       "[x](!y) rolled a fusion critical! [f20:1:started:c1:-Ntoken]",
       "table",
     );
-    expect(fake.readPublic()).toEqual([
-      "&#91;x&#93;&#40;&#33;y&#41; rolled a fusion critical&#33; [f20:1:started:c1:-Ntoken]",
-    ]);
+    const [posted] = fake.readPublic();
+    expect(posted).toBe(
+      '&#91;x&#93;&#40;&#33;y&#41; rolled a fusion critical&#33;<span style="color:#888;font-size:80%"> [f20:1:started:c1:-Ntoken]',
+    );
+    expect(parseChainMessage(posted ?? "")).toMatchObject({ outcome: "parsed", chainEvent: { kind: "chain started" } });
     expect(fake.postedChat[0]?.speaker).toBe("Fusion20");
   });
 });

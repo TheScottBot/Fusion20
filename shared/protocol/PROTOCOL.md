@@ -58,6 +58,8 @@ Niamh nominates FighterMan to attack the Goblin. [f20:1:nominated:c7:-Nroller:-N
 
 Announcements caused by a roll whispered to the GM are whispered to the GM in the same form, so a reader that is not the GM never sees them.
 
+The Mod styles the tag small and grey by putting an opening `<span style="...">` directly against the sentence's last word, with no space inside it, so the tag is still the last word of the raw message. A reader takes the last word whether it sees the raw message or the rendered text.
+
 Only the last word is read. A character named like a tag stays part of the sentence, because it is never last. The sentence is at most 500 characters, and a reader never interprets it.
 
 The tag is `[f20:` followed by fields joined by colons, then `]`:

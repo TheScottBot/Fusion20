@@ -1,9 +1,15 @@
 import { buildBeyond20Message, buildDigitalInlineRoll } from "@fusion20/shared/testing";
 import { beforeEach, describe, expect, it } from "vitest";
 import { installFusion20Mod } from "../src/fusion20_mod.ts";
-import { buildPartyOnPage, createFakeModEnvironment, type FakeModEnvironment } from "./fake_mod_environment.ts";
+import {
+  buildPartyOnPage,
+  createFakeModEnvironment,
+  renderForPlayers,
+  type FakeModEnvironment,
+} from "./fake_mod_environment.ts";
 
 let fake: FakeModEnvironment;
+const seenPublic = () => fake.readPublic().map(renderForPlayers);
 let installed: ReturnType<typeof installFusion20Mod>;
 
 function rollFrom(characterName: string, playerId: string, naturalD20: number): void {
@@ -79,7 +85,7 @@ describe("a chain through the Mod", () => {
     rollFrom("Niamh", "player-niamh", 20);
     const chainId = chainIdOfFirstPrompt();
     expect(chainId).toMatch(/^[a-z0-9]+-1$/u);
-    expect(fake.readPublic()).toEqual([`Niamh rolled a fusion critical&#33; [f20:1:started:${chainId}:-Ntokenniamh]`]);
+    expect(seenPublic()).toEqual([`Niamh rolled a fusion critical! [f20:1:started:${chainId}:-Ntokenniamh]`]);
     expect(fake.readWhispers('"Niamh\'s Player"')[0]).toContain("token=&#64;{target|token_id}");
   });
 
@@ -92,7 +98,7 @@ describe("a chain through the Mod", () => {
     );
     command("player-niamh", `!fusion20 nominate chain=${chainId} partner=-Ntokenfighter`);
     rollFrom("FighterMan", "player-fighter", 7);
-    expect(fake.readPublic().slice(1)).toEqual([
+    expect(seenPublic().slice(1)).toEqual([
       `The fusion chain targets Goblin. [f20:1:target:${chainId}:-Ntokengoblin]`,
       `Niamh nominates FighterMan to attack Goblin. [f20:1:nominated:${chainId}:-Ntokenniamh:-Ntokenfighter:-Ntokengoblin]`,
       `The fusion chain ends: that attack was not a critical. [f20:1:ended:${chainId}:partner-attack]`,
@@ -103,11 +109,11 @@ describe("a chain through the Mod", () => {
     const page = fake.environment.campaign().get("playerpageid") as string;
     fake.addToken(page, "-Ntokenniamhtwo", { name: "Niamh", represents: "-Ncharniamh" });
     rollFrom("Niamh", "player-niamh", 20);
-    expect(fake.readPublic()).toEqual([]);
+    expect(seenPublic()).toEqual([]);
     const rollId = /roll=([\w-]+)/u.exec(fake.readWhispers('"Niamh\'s Player"')[0] ?? "")?.[1] ?? "";
     expect(rollId).toMatch(/^r[a-z0-9]+-1$/u);
     command("player-niamh", `!fusion20 roller roll=${rollId} token=-Ntokenniamhtwo`);
-    expect(fake.readPublic()).toEqual([expect.stringMatching(/:started:[\w-]+:-Ntokenniamhtwo\]$/u)]);
+    expect(seenPublic()).toEqual([expect.stringMatching(/:started:[\w-]+:-Ntokenniamhtwo\]$/u)]);
     expect(installed.readCoordinator()?.readCounters().refusedCommands).toEqual({});
   });
 
@@ -120,9 +126,9 @@ describe("a chain through the Mod", () => {
       }),
       type: "whisper",
     });
-    expect(fake.readPublic()).toEqual([]);
-    expect(fake.readWhispers("gm")).toEqual([
-      expect.stringMatching(/^Niamh rolled a fusion critical&#33; \[f20:1:started:/u),
+    expect(seenPublic()).toEqual([]);
+    expect(fake.readWhispers("gm").map(renderForPlayers)).toEqual([
+      expect.stringMatching(/^Niamh rolled a fusion critical! \[f20:1:started:/u),
     ]);
     expect(fake.readWhispers('"Niamh\'s Player"')[0]).toContain("Pick a target");
   });
@@ -140,7 +146,7 @@ describe("a chain through the Mod", () => {
     fake.emit("change:campaign:turnorder", fake.environment.campaign(), {
       turnorder: JSON.stringify([{ id: "-Ntokenniamh" }]),
     });
-    expect(fake.readPublic().at(-1)).toMatch(/turn moves on\. \[f20:1:ended:[\w-]+:turn-order\]$/u);
+    expect(seenPublic().at(-1)).toMatch(/turn moves on\. \[f20:1:ended:[\w-]+:turn-order\]$/u);
   });
 
   it("stamps chain ids with the start time, so a restarted sandbox never reuses one (FF22)", () => {
@@ -195,7 +201,7 @@ describe("setting a range by command (FD4)", () => {
     command("player-gm", "!fusion20 range character=-Ncharniamh value=melee=10");
     const attributes = fake.environment.findObjs({ _type: "attribute", _characterid: "-Ncharniamh" });
     expect(attributes.map((attribute) => attribute.get("current"))).toEqual(["melee=10"]);
-    expect(fake.readWhispers("gm")).toHaveLength(1);
+    expect(fake.readWhispers("gm").map(renderForPlayers)).toHaveLength(1);
   });
 
   it.each([

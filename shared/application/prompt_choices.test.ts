@@ -7,6 +7,11 @@ function assessment(reference: string, reasons: PartnerAssessment["reasons"]): P
 }
 
 describe("choosePromptPartners", () => {
+  it("leaves out an ally who is the target (FF113)", () => {
+    const choices = choosePromptPartners([assessment("bard", []), assessment("fighter", ["is the target"])]);
+    expect([choices.eligible.length, choices.ineligibleAllies]).toEqual([1, []]);
+  });
+
   it("offers eligible allies, lists other allies, and leaves hostiles out, in the domain's order", () => {
     const choices = choosePromptPartners([
       assessment("bard", []),

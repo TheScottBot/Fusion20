@@ -22,6 +22,11 @@ export function decodeCharacterReferences(text: string): string {
   return text.replace(/&#(\d+);/gu, (_reference, codePoint: string) => String.fromCodePoint(Number(codePoint)));
 }
 
+// What a player reads: markup rendered away, as chat does, and references decoded.
+export function renderForPlayers(text: string): string {
+  return decodeCharacterReferences(text.replace(/<[^>]*>/gu, ""));
+}
+
 export function createFakeModEnvironment() {
   const objects: { readonly modObject: ModObject; readonly attributes: Record<string, unknown> }[] = [];
   const listenersByEvent = new Map<string, ModEventListener[]>();

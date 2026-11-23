@@ -103,4 +103,6 @@ pnpm install --frozen-lockfile
 pnpm verify
 ```
 
+Fusion20 is released under the MIT licence, in `LICENSE`.
+
 `pnpm verify` runs formatting, linting, type checks, tests, the product builds and the repository checks, which cover import rules, copied code and prose. It's what CI runs. `pnpm build` alone writes the Mod to `products/roll20-mod/dist/fusion20.js`.

@@ -117,15 +117,24 @@ export function createModPrompter(environment: ModEnvironment): NominationPrompt
   };
 }
 
-// The tag is the last word and holds only protocol characters, so it is posted as it is for the
-// extension to read (FD12). Everything before it is escaped.
+// Shows the tag small and grey, since it is for software, not players (FF114). The style has
+// no spaces and joins the sentence's last word, so the tag stays the last word of the message
+// for the extension to read. Roll20 closes the element at the end of the message.
+export const tagStyleOpening = '<span style="color:#888;font-size:80%">';
+
+// The tag holds only protocol characters, so it is posted as it is (FD12). Everything before it
+// is escaped.
 export function createModAnnouncer(environment: ModEnvironment): ChainAnnouncer {
   return {
     announce: (messageText, audience) => {
       const tagStart = messageText.lastIndexOf(" ");
       const sentence = messageText.slice(0, Math.max(tagStart, 0));
       const tag = messageText.slice(tagStart + 1);
-      whisperTo(environment, audience === "table" ? everyoneTarget : "gm", `${escapeChatText(sentence)} ${tag}`);
+      whisperTo(
+        environment,
+        audience === "table" ? everyoneTarget : "gm",
+        `${escapeChatText(sentence)}${tagStyleOpening} ${tag}`,
+      );
     },
   };
 }
